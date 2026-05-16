@@ -428,35 +428,50 @@ export async function bootstrapTemplateSync() {
       } catch (e) { /* skip */ }
     }
 
-    // Push: any local key not present remotely → upload it.
-    const remoteKeys = new Set(Object.keys(remoteTpls));
+    // Push local-only entries to cloud ONLY on the very first sync for this
+    // browser — afterwards we never auto-push, only pull. Without this gate
+    // any cached stale template (e.g. one left behind after a cloud delete)
+    // would be re-uploaded on the next bootstrap, undoing the cleanup.
+    const PUSH_UP_FLAG = "templateSync.initialPushUpDone";
+    let alreadyPushed = false;
     try {
-      for (let i = 0; i < window.localStorage.length; i++) {
-        const k = window.localStorage.key(i);
-        if (!k || k.indexOf("customTemplate:") !== 0) continue;
-        const rest = k.slice("customTemplate:".length);
-        if (remoteKeys.has(rest)) continue;
-        const sepIdx = rest.lastIndexOf(":");
-        if (sepIdx === -1) continue;
-        const cat = rest.slice(0, sepIdx);
-        const lang = rest.slice(sepIdx + 1);
-        const value = window.localStorage.getItem(k);
-        if (typeof value !== "string") continue;
-        try {
-          await upsertTemplateRemote(cat, lang, value);
-          pushed++;
-        } catch (e) { /* skip — best effort */ }
-      }
-    } catch (e) { /* iterate failure — skip */ }
+      alreadyPushed = !!window.localStorage.getItem(PUSH_UP_FLAG);
+    } catch (e) { /* ignore */ }
 
-    const remoteCatKeys = new Set(remoteCats.map(c => c.key));
-    const localCats = loadCustomCategories();
-    for (const cat of localCats) {
-      if (remoteCatKeys.has(cat.key)) continue;
+    if (!alreadyPushed) {
+      const remoteKeys = new Set(Object.keys(remoteTpls));
       try {
-        await upsertCustomCategoryRemote(cat);
-        pushed++;
-      } catch (e) { /* skip */ }
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const k = window.localStorage.key(i);
+          if (!k || k.indexOf("customTemplate:") !== 0) continue;
+          const rest = k.slice("customTemplate:".length);
+          if (remoteKeys.has(rest)) continue;
+          const sepIdx = rest.lastIndexOf(":");
+          if (sepIdx === -1) continue;
+          const cat = rest.slice(0, sepIdx);
+          const lang = rest.slice(sepIdx + 1);
+          const value = window.localStorage.getItem(k);
+          if (typeof value !== "string") continue;
+          try {
+            await upsertTemplateRemote(cat, lang, value);
+            pushed++;
+          } catch (e) { /* skip — best effort */ }
+        }
+      } catch (e) { /* iterate failure — skip */ }
+
+      const remoteCatKeys = new Set(remoteCats.map(c => c.key));
+      const localCats = loadCustomCategories();
+      for (const cat of localCats) {
+        if (remoteCatKeys.has(cat.key)) continue;
+        try {
+          await upsertCustomCategoryRemote(cat);
+          pushed++;
+        } catch (e) { /* skip */ }
+      }
+
+      try {
+        window.localStorage.setItem(PUSH_UP_FLAG, new Date().toISOString());
+      } catch (e) { /* ignore */ }
     }
 
     return { ok: true, pulled, pushed, error: null };

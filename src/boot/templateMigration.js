@@ -1,32 +1,37 @@
-// One-time cleanup for browsers that cached an old, pre-fix version of the
-// built-in flight template in localStorage. The bug pattern: the
-// "מסלול הטיסות 🌍" / "Itinerary 🌍" / "Itinéraire 🌍" heading immediately
-// followed by the first flight block with no blank line between them, which
-// makes paragraph-based block expansion treat the heading as part of the
-// block and repeat it for every flight. Newer builds ship a corrected default
-// with a blank line, but a saved copy in localStorage (also mirrored to the
-// cloud) keeps winning until it's wiped.
+// One-shot cleanup for browsers that cached an old pre-fix version of the
+// built-in flight template. Older saves were missing a blank line between the
+// itinerary heading and the first flight block, which made the heading repeat
+// for every flight when expanded. Same browser also shipped older formatting
+// (parens around seat, plain-text class line, hardcoded direction string),
+// so we wipe the cached flight templates unconditionally on first run and let
+// the in-code defaults take over.
 //
-// This boot file runs BEFORE templateSync so the bootstrap pull/push round
-// doesn't re-upload the stale local copy to the cloud.
+// Runs BEFORE templateSync's bootstrap so the bootstrap's "local-only → push
+// to cloud" step doesn't re-upload the stale copy to Supabase.
+//
+// Uses a localStorage flag so it only runs once per browser. A subsequent
+// legitimate edit by the user won't be wiped on later loads.
 
-const STALE_FLIGHT_TEMPLATES = [
-  { key: "customTemplate:flight:he", needle: /\*מסלול הטיסות 🌍\*\n\*/ },
-  { key: "customTemplate:flight:en", needle: /\*Itinerary 🌍\*\n\*/ },
-  { key: "customTemplate:flight:fr", needle: /\*Itinéraire 🌍\*\n\*/ }
+const MIGRATION_FLAG = "templateMigration.flightCleanup.v1";
+
+const STALE_FLIGHT_KEYS = [
+  "customTemplate:flight:he",
+  "customTemplate:flight:en",
+  "customTemplate:flight:fr"
 ];
 
 export default () => {
   try {
-    for (const { key, needle } of STALE_FLIGHT_TEMPLATES) {
-      const val = window.localStorage.getItem(key);
-      if (val && needle.test(val)) {
-        window.localStorage.removeItem(key);
+    if (window.localStorage.getItem(MIGRATION_FLAG)) return;
+    for (const k of STALE_FLIGHT_KEYS) {
+      if (window.localStorage.getItem(k) !== null) {
+        window.localStorage.removeItem(k);
         // eslint-disable-next-line no-console
-        console.info("[template migration] cleared stale localStorage:", key);
+        console.info("[template migration] cleared cached flight template:", k);
       }
     }
+    window.localStorage.setItem(MIGRATION_FLAG, new Date().toISOString());
   } catch (e) {
-    // localStorage unavailable (private mode / quota) — nothing to do
+    // localStorage unavailable — nothing to do
   }
 };
