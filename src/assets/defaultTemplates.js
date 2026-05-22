@@ -385,6 +385,44 @@ import {
   deleteCustomCategoryRemote
 } from "./templateSync.js";
 
+// Detect outdated/buggy flight templates that pre-date the round-trip format
+// rewrite. A template is treated as outdated when it carries any of these
+// fingerprints that the current code never emits:
+//   - The direction header is hardcoded (e.g. "*טיסה/ות הלוך🛫*") instead of
+//     the {{FLIGHT_DIRECTION}} placeholder, so per-flight labels (outbound /
+//     connecting / continuing / inbound) can never appear.
+//   - The seat line uses the old parenthesised "(מושב - *XX*)" / "(Seat *XX*)"
+//     shape that the current default replaced with "מושב *XX*" / "Seat *XX*".
+//   - The itinerary heading sits directly above the first FLIGHT_ line with no
+//     blank separator, so paragraph-based block expansion folds the heading
+//     into the block and repeats it per flight.
+// When loadTemplate / bootstrap sees one of these, it pretends nothing is
+// cached and falls back to the corrected default shipped in code.
+export function isOutdatedFlightTemplate(value) {
+  if (typeof value !== "string" || !value) return false;
+  const hasPlaceholderDirection = value.indexOf("{{FLIGHT_DIRECTION}}") !== -1;
+  const HARDCODED_DIRECTION = [
+    "*טיסה/ות הלוך",
+    "*טיסה/ות חזור",
+    "*Outbound flight",
+    "*Inbound flight",
+    "*Vol aller",
+    "*Vol retour"
+  ];
+  if (!hasPlaceholderDirection) {
+    for (const needle of HARDCODED_DIRECTION) {
+      if (value.indexOf(needle) !== -1) return true;
+    }
+  }
+  if (value.indexOf("(מושב - *XX*)") !== -1) return true;
+  if (value.indexOf("(Seat *XX*)") !== -1) return true;
+  if (value.indexOf("(Siege *XX*)") !== -1) return true;
+  if (/\*מסלול הטיסות 🌍\*\n\*/.test(value)) return true;
+  if (/\*Itinerary 🌍\*\n\*/.test(value)) return true;
+  if (/\*Itinéraire 🌍\*\n\*/.test(value)) return true;
+  return false;
+}
+
 const storageKey = (category, lang) => `customTemplate:${category}:${lang}`;
 const historyKey = (category, lang) => `customTemplateHistory:${category}:${lang}`;
 const HISTORY_LIMIT = 20;
@@ -414,6 +452,12 @@ export async function bootstrapTemplateSync() {
       const cat = compoundKey.slice(0, sepIdx);
       const lang = compoundKey.slice(sepIdx + 1);
       const remoteVal = remoteTpls[compoundKey].value;
+      // Refuse to cache outdated/buggy flight templates pulled from cloud —
+      // they'd otherwise override the corrected in-code default at render time.
+      if (cat === "flight" && isOutdatedFlightTemplate(remoteVal)) {
+        try { window.localStorage.removeItem(storageKey(cat, lang)); } catch (e) { /* ignore */ }
+        continue;
+      }
       try {
         window.localStorage.setItem(storageKey(cat, lang), remoteVal);
         pulled++;
@@ -556,7 +600,12 @@ export function deleteCustomCategory(key) {
 export function loadTemplate(category, lang) {
   try {
     const saved = window.localStorage.getItem(storageKey(category, lang));
-    if (saved !== null) return saved;
+    // For built-in `flight`, ignore a cached value if it carries the old
+    // pre-fix structure — we'd rather render the up-to-date default than the
+    // broken save. Custom categories are always honoured as-is.
+    if (saved !== null && !(category === "flight" && isOutdatedFlightTemplate(saved))) {
+      return saved;
+    }
   } catch (e) {
     // localStorage unavailable — fall back to default
   }
