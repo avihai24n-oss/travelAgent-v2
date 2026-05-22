@@ -108,7 +108,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Abacus International",
+    "name": "Abacus",
     "IATA": "1B",
     "ICAO": "",
     "Country": "Singapore",
@@ -261,7 +261,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Astro Air International",
+    "name": "Astro Air",
     "IATA": "",
     "ICAO": "AAV",
     "Country": "United States",
@@ -279,7 +279,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Afrinat International Airlines",
+    "name": "Afrinat Airlines",
     "IATA": "Q9",
     "ICAO": "AFU",
     "Country": "Gambia",
@@ -360,7 +360,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "ABSA - Aerolinhas Brasileiras",
+    "name": "ABSA-Aerolinhas Brasileiras",
     "IATA": "M3",
     "ICAO": "TUS",
     "Country": "Brazil",
@@ -522,7 +522,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Aero Asia International",
+    "name": "Aero Asia",
     "IATA": "E4",
     "ICAO": "RSO",
     "Country": "Pakistan",
@@ -1233,7 +1233,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Caledonie International",
+    "name": "Air Caledonie",
     "IATA": "SB",
     "ICAO": "ACI",
     "Country": "France",
@@ -1341,7 +1341,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Senegal International",
+    "name": "Air Senegal",
     "IATA": "V7",
     "ICAO": "SNG",
     "Country": "Senegal",
@@ -1809,7 +1809,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "African Airlines International Limited",
+    "name": "African Airlines Limited",
     "IATA": "",
     "ICAO": "AIK",
     "Country": "Kenya",
@@ -1818,7 +1818,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "African International Airways",
+    "name": "African Airways",
     "IATA": "",
     "ICAO": "AIN",
     "Country": "Swaziland",
@@ -1872,7 +1872,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Airlift International",
+    "name": "Airlift",
     "IATA": "",
     "ICAO": "AIR",
     "Country": "United States",
@@ -2196,7 +2196,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Amerijet International",
+    "name": "Amerijet",
     "IATA": "M6",
     "ICAO": "AJT",
     "Country": "United States",
@@ -2223,7 +2223,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Alpha Jet International",
+    "name": "Alpha Jet",
     "IATA": "",
     "ICAO": "AJW",
     "Country": "United States",
@@ -2745,7 +2745,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Aeroputul International Marculesti",
+    "name": "Aeroputul Marculesti",
     "IATA": "",
     "ICAO": "AMM",
     "Country": "Moldova",
@@ -3051,7 +3051,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air North Charter - Canada",
+    "name": "Air North Charter-Canada",
     "IATA": "4N",
     "ICAO": "ANT",
     "Country": "Canada",
@@ -3276,7 +3276,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Avjet International (FZE)",
+    "name": "Avjet (FZE)",
     "IATA": "",
     "ICAO": "VJE",
     "Country": "United Arab Emirates",
@@ -3312,7 +3312,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Afro International Ent. Limited",
+    "name": "Afro Ent. Limited",
     "IATA": "",
     "ICAO": "AOR",
     "Country": "Nigeria",
@@ -3402,7 +3402,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air People International",
+    "name": "Air People",
     "IATA": "",
     "ICAO": "APG",
     "Country": "Thailand",
@@ -3546,7 +3546,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Plan International",
+    "name": "Air Plan",
     "IATA": "",
     "ICAO": "APV",
     "Country": "Democratic Republic of the Congo",
@@ -3663,7 +3663,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Routing International Corp.",
+    "name": "Air Routing Corp.",
     "IATA": "",
     "ICAO": "ARC",
     "Country": "United States",
@@ -3762,7 +3762,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Airlec - Air Aquitaine Transport",
+    "name": "Airlec-Air Aquitaine Transport",
     "IATA": "",
     "ICAO": "ARL",
     "Country": "France",
@@ -3996,7 +3996,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Aerosun International",
+    "name": "Aerosun",
     "IATA": "",
     "ICAO": "ASI",
     "Country": "AEROSUN",
@@ -4095,7 +4095,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Nepal International",
+    "name": "Air Nepal",
     "IATA": "",
     "ICAO": "NPL",
     "Country": "Nepal",
@@ -4284,7 +4284,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Transport International",
+    "name": "Air Transport",
     "IATA": "8C",
     "ICAO": "ATN",
     "Country": "United States",
@@ -4293,7 +4293,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "ASTRAL Colombia - Aerotransportes Especiales Ltda.",
+    "name": "ASTRAL Colombia-Aerotransportes Especiales Ltda.",
     "IATA": "",
     "ICAO": "ATP",
     "Country": "Colombia",
@@ -4590,7 +4590,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Uganda International Ltd.",
+    "name": "Air Uganda Ltd.",
     "IATA": "",
     "ICAO": "AUX",
     "Country": "Uganda",
@@ -4617,7 +4617,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Avianca - Aerovias Nacionales de Colombia",
+    "name": "Avianca-Aerovias Nacionales de Colombia",
     "IATA": "AV",
     "ICAO": "AVA",
     "Country": "AVIANCA",
@@ -4860,7 +4860,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Airbus Transport International",
+    "name": "Airbus Transport",
     "IATA": "",
     "ICAO": "BGA",
     "Country": "France",
@@ -4968,7 +4968,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Airways International",
+    "name": "Airways",
     "IATA": "",
     "ICAO": "AWB",
     "Country": "AIRNAT",
@@ -5139,7 +5139,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Aeron International Airlines",
+    "name": "Aeron Airlines",
     "IATA": "",
     "ICAO": "AXI",
     "Country": "AIR FREIGHTER",
@@ -7389,7 +7389,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Aero Davinci International",
+    "name": "Aero Davinci",
     "IATA": "",
     "ICAO": "DVI",
     "Country": "Mexico",
@@ -7785,7 +7785,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "AF-Air International",
+    "name": "AF-Air",
     "IATA": "",
     "ICAO": "FAN",
     "Country": "Angola",
@@ -8154,7 +8154,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "African International Transport",
+    "name": "African Transport",
     "IATA": "",
     "ICAO": "GIL",
     "Country": "Guinea",
@@ -8289,7 +8289,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Agroar - Trabalhos Aereos",
+    "name": "Agroar-Trabalhos Aereos",
     "IATA": "",
     "ICAO": "GRR",
     "Country": "Portugal",
@@ -8388,7 +8388,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Comores International",
+    "name": "Air Comores",
     "IATA": "GG",
     "ICAO": "HAH",
     "Country": "Comoros",
@@ -8595,7 +8595,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Aero International",
+    "name": "Aero",
     "IATA": "",
     "ICAO": "INA",
     "Country": "Mexico",
@@ -8946,7 +8946,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Mali International",
+    "name": "Air Mali",
     "IATA": "",
     "ICAO": "KLB",
     "Country": "Mali",
@@ -10278,7 +10278,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Cargo Express International",
+    "name": "Air Cargo Express",
     "IATA": "",
     "ICAO": "PFT",
     "Country": "United States",
@@ -10377,7 +10377,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Paradise International",
+    "name": "Air Paradise",
     "IATA": "AD",
     "ICAO": "PRZ",
     "Country": "Indonesia",
@@ -10863,7 +10863,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Armenian International Airways",
+    "name": "Armenian Airways",
     "IATA": "MV",
     "ICAO": "RML",
     "Country": "Armenia",
@@ -11250,7 +11250,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "American Jet International",
+    "name": "American Jet",
     "IATA": "",
     "ICAO": "SCM",
     "Country": "United States",
@@ -12402,7 +12402,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "BETA - Brazilian Express Transportes Aereos",
+    "name": "BETA-Brazilian Express Transportes Aereos",
     "IATA": "",
     "ICAO": "BET",
     "Country": "Brazil",
@@ -12483,7 +12483,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "British Gulf International",
+    "name": "British Gulf",
     "IATA": "",
     "ICAO": "BGI",
     "Country": "S",
@@ -12492,7 +12492,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "British Gulf International-Fez",
+    "name": "British Gulf-Fez",
     "IATA": "",
     "ICAO": "BGK",
     "Country": "Kyrgyzstan",
@@ -12672,7 +12672,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "British International Helicopters",
+    "name": "British Helicopters",
     "IATA": "BS",
     "ICAO": "BIH",
     "Country": "United Kingdom",
@@ -12762,7 +12762,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Barken International",
+    "name": "Barken",
     "IATA": "",
     "ICAO": "BKJ",
     "Country": "United States",
@@ -12870,7 +12870,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Bali International Air Service",
+    "name": "Bali Air Service",
     "IATA": "",
     "ICAO": "BLN",
     "Country": "Indonesia",
@@ -13050,7 +13050,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Bancstar - Valley National Corporation",
+    "name": "Bancstar-Valley National Corporation",
     "IATA": "",
     "ICAO": "BNS",
     "Country": "United States",
@@ -13302,7 +13302,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Braniff International Airways",
+    "name": "Braniff Airways",
     "IATA": "BN",
     "ICAO": "BNF",
     "Country": "United States",
@@ -13329,7 +13329,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Bistair - Fez",
+    "name": "Bistair-Fez",
     "IATA": "",
     "ICAO": "BSC",
     "Country": "Kyrgyzstan",
@@ -13437,7 +13437,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Baltia Air Lines",
+    "name": "Baltia Airlines",
     "IATA": "",
     "ICAO": "BTL",
     "Country": "United States",
@@ -13608,7 +13608,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Brussels International Airlines",
+    "name": "Brussels Airlines",
     "IATA": "",
     "ICAO": "BXI",
     "Country": "Belgium",
@@ -14103,7 +14103,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Baseops International",
+    "name": "Baseops",
     "IATA": "",
     "ICAO": "XBO",
     "Country": "United States",
@@ -14202,7 +14202,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "CAL Cargo Air Lines",
+    "name": "CAL Cargo Airlines",
     "IATA": "5C",
     "ICAO": "ICL",
     "Country": "Israel",
@@ -14697,7 +14697,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Capital Cargo International Airlines",
+    "name": "Capital Cargo Airlines",
     "IATA": "PT",
     "ICAO": "CCI",
     "Country": "United States",
@@ -15417,7 +15417,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Century Aviation International",
+    "name": "Century Aviation",
     "IATA": "",
     "ICAO": "HAI",
     "Country": "Canada",
@@ -15489,7 +15489,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Challenge International Airlines",
+    "name": "Challenge Airlines",
     "IATA": "",
     "ICAO": "OFF",
     "Country": "United States",
@@ -16209,7 +16209,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Claessens International Limited",
+    "name": "Claessens Limited",
     "IATA": "",
     "ICAO": "FMC",
     "Country": "United Kingdom",
@@ -16380,7 +16380,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Colt International",
+    "name": "Colt",
     "IATA": "",
     "ICAO": "CCX",
     "Country": "United States",
@@ -16722,7 +16722,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Compass International Airways",
+    "name": "Compass Airways",
     "IATA": "",
     "ICAO": "CPS",
     "Country": "United Kingdom",
@@ -17118,7 +17118,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Corporate Flight International",
+    "name": "Corporate Flight",
     "IATA": "",
     "ICAO": "VHT",
     "Country": "United States",
@@ -17199,7 +17199,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Country International Airlines",
+    "name": "Country Airlines",
     "IATA": "",
     "ICAO": "CIK",
     "Country": "Kyrgyzstan",
@@ -17640,7 +17640,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "DHL International",
+    "name": "DHL",
     "IATA": "ES",
     "ICAO": "DHX",
     "Country": "Bahrain",
@@ -17892,7 +17892,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Data International",
+    "name": "Data",
     "IATA": "",
     "ICAO": "DTN",
     "Country": "Sudan",
@@ -18054,7 +18054,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Delta Air Lines",
+    "name": "Delta Airlines",
     "IATA": "DL",
     "ICAO": "DAL",
     "Country": "United States",
@@ -18072,7 +18072,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Delta Express International",
+    "name": "Delta Express",
     "IATA": "",
     "ICAO": "DLI",
     "Country": "Ukraine",
@@ -18720,7 +18720,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "EFAOS- Agencia De Viagens e Turismo",
+    "name": "EFAOS-Agencia De Viagens e Turismo",
     "IATA": "",
     "ICAO": "EFS",
     "Country": "Angola",
@@ -18873,7 +18873,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Eagle International",
+    "name": "Eagle",
     "IATA": "",
     "ICAO": "SEG",
     "Country": "Senegal",
@@ -19341,7 +19341,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "El Quilada International Aviation",
+    "name": "El Quilada Aviation",
     "IATA": "",
     "ICAO": "GLQ",
     "Country": "Sudan",
@@ -20034,7 +20034,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Euro-Asia Air International",
+    "name": "Euro-Asia Air",
     "IATA": "",
     "ICAO": "KZE",
     "Country": "Kazakhstan",
@@ -20196,7 +20196,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Europe Air Lines",
+    "name": "Europe Airlines",
     "IATA": "",
     "ICAO": "GED",
     "Country": "France",
@@ -20322,7 +20322,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Evergreen International Airlines",
+    "name": "Evergreen Airlines",
     "IATA": "EZ",
     "ICAO": "EIA",
     "Country": "United States",
@@ -20583,7 +20583,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Express International Cargo",
+    "name": "Express Cargo",
     "IATA": "",
     "ICAO": "EIC",
     "Country": "S",
@@ -20610,7 +20610,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Express One International",
+    "name": "Express One",
     "IATA": "EO",
     "ICAO": "LHN",
     "Country": "United States",
@@ -21411,7 +21411,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Flight International",
+    "name": "Flight",
     "IATA": "",
     "ICAO": "IVJ",
     "Country": "United States",
@@ -21429,7 +21429,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Flight Ops International",
+    "name": "Flight Ops",
     "IATA": "",
     "ICAO": "FOI",
     "Country": "United States",
@@ -21501,7 +21501,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Flight-Ops International",
+    "name": "Flight-Ops",
     "IATA": "",
     "ICAO": "KLO",
     "Country": "Canada",
@@ -21609,7 +21609,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Florida West International Airways",
+    "name": "Florida West Airways",
     "IATA": "RF",
     "ICAO": "FWL",
     "Country": "United States",
@@ -21690,7 +21690,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Fly International Airways",
+    "name": "Fly Airways",
     "IATA": "",
     "ICAO": "NVJ",
     "Country": "Tunisia",
@@ -21960,7 +21960,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Forward Air International Airlines",
+    "name": "Forward Air Airlines",
     "IATA": "BN",
     "ICAO": "",
     "Country": "United States",
@@ -22293,7 +22293,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Futura International Airways",
+    "name": "Futura Airways",
     "IATA": "FH",
     "ICAO": "FUA",
     "Country": "Spain",
@@ -22527,7 +22527,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Galair International",
+    "name": "Galair",
     "IATA": "",
     "ICAO": "SWF",
     "Country": "United Kingdom",
@@ -22572,7 +22572,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Galileo International",
+    "name": "Galileo",
     "IATA": "1G",
     "ICAO": "",
     "Country": "United States",
@@ -22590,7 +22590,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Gambia International Airlines",
+    "name": "Gambia Airlines",
     "IATA": "GC",
     "ICAO": "GNR",
     "Country": "Gambia",
@@ -22977,7 +22977,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Ghana International Airlines",
+    "name": "Ghana Airlines",
     "IATA": "G0",
     "ICAO": "GHB",
     "Country": "Ghana",
@@ -23697,7 +23697,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Gulf African Airlines - Gambia",
+    "name": "Gulf African Airlines-Gambia",
     "IATA": "",
     "ICAO": "GUF",
     "Country": "",
@@ -23751,7 +23751,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Gulf Pearl Air Lines",
+    "name": "Gulf Pearl Airlines",
     "IATA": "",
     "ICAO": "GPC",
     "Country": "Libya",
@@ -23778,7 +23778,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Gulfstream International Airlines",
+    "name": "Gulfstream Airlines",
     "IATA": "",
     "ICAO": "GFT",
     "Country": "United States",
@@ -23940,7 +23940,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Haiti International Air",
+    "name": "Haiti Air",
     "IATA": "",
     "ICAO": "HTI",
     "Country": "Haiti",
@@ -23949,7 +23949,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Haiti International Airline",
+    "name": "Haiti Airline",
     "IATA": "",
     "ICAO": "HRB",
     "Country": "Haiti",
@@ -24030,7 +24030,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Hamburg International",
+    "name": "Hamburg",
     "IATA": "4R",
     "ICAO": "HHI",
     "Country": "Germany",
@@ -24228,7 +24228,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Heavylift International",
+    "name": "Heavylift",
     "IATA": "",
     "ICAO": "HVL",
     "Country": "United Arab Emirates",
@@ -24849,7 +24849,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Hokkaido International Airlines",
+    "name": "Hokkaido Airlines",
     "IATA": "HD",
     "ICAO": "ADO",
     "Country": "Japan",
@@ -24876,7 +24876,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Holding International Group",
+    "name": "Holding Group",
     "IATA": "",
     "ICAO": "HIN",
     "Country": "Mexico",
@@ -25164,7 +25164,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Air Carrier Association",
+    "name": "Air Carrier Association",
     "IATA": "",
     "ICAO": "ITC",
     "Country": "Belgium",
@@ -25254,7 +25254,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "IJM International Jet Management",
+    "name": "IJM Jet Management",
     "IATA": "",
     "ICAO": "IJM",
     "Country": "Austria",
@@ -25263,7 +25263,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "IKI International Airlines",
+    "name": "IKI Airlines",
     "IATA": "",
     "ICAO": "IKK",
     "Country": "Japan",
@@ -25506,7 +25506,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Il Ciocco International Travel Service",
+    "name": "Il Ciocco Travel Service",
     "IATA": "",
     "ICAO": "CIO",
     "Country": "Italy",
@@ -25623,7 +25623,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "India International Airways",
+    "name": "India Airways",
     "IATA": "",
     "ICAO": "IIL",
     "Country": "India",
@@ -25740,7 +25740,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Insel Air International",
+    "name": "Insel Air",
     "IATA": "",
     "ICAO": "INC",
     "Country": "Netherlands Antilles",
@@ -26037,7 +26037,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Air Cargo Corporation",
+    "name": "Air Cargo Corporation",
     "IATA": "",
     "ICAO": "IAK",
     "Country": "Egypt",
@@ -26046,7 +26046,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Air Corporation",
+    "name": "Air Corporation",
     "IATA": "",
     "ICAO": "EXX",
     "Country": "United States",
@@ -26055,7 +26055,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Air Service",
+    "name": "Air Service",
     "IATA": "",
     "ICAO": "IAS",
     "Country": "United States",
@@ -26064,7 +26064,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Air Services",
+    "name": "Air Services",
     "IATA": "",
     "ICAO": "IAX",
     "Country": "Liberia",
@@ -26073,7 +26073,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Business Air",
+    "name": "Business Air",
     "IATA": "6I",
     "ICAO": "IBZ",
     "Country": "Sweden",
@@ -26082,7 +26082,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Business Aircraft",
+    "name": "Business Aircraft",
     "IATA": "",
     "ICAO": "IBY",
     "Country": "United States",
@@ -26091,7 +26091,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Charter Services",
+    "name": "Charter Services",
     "IATA": "",
     "ICAO": "ICS",
     "Country": "Mexico",
@@ -26100,7 +26100,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Charter Xpress",
+    "name": "Charter Xpress",
     "IATA": "",
     "ICAO": "ICX",
     "Country": "United States",
@@ -26109,7 +26109,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Committee of the Red Cross",
+    "name": "Committee of the Red Cross",
     "IATA": "",
     "ICAO": "RED",
     "Country": "Switzerland",
@@ -26118,7 +26118,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Company for Transport",
+    "name": "Company for Transport",
     "IATA": "",
     "ICAO": "IIG",
     "Country": "ALDAWLYH AIR",
@@ -26127,7 +26127,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Flight Training Academy",
+    "name": "Flight Training Academy",
     "IATA": "",
     "ICAO": "IFX",
     "Country": "United States",
@@ -26136,7 +26136,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Jet Aviation Services",
+    "name": "Jet Aviation Services",
     "IATA": "",
     "ICAO": "IJA",
     "Country": "United States",
@@ -26145,7 +26145,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Jet Charter",
+    "name": "Jet Charter",
     "IATA": "",
     "ICAO": "HSP",
     "Country": "United States",
@@ -26154,7 +26154,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International SOS WIndhoek",
+    "name": "SOS WIndhoek",
     "IATA": "",
     "ICAO": "RSQ",
     "Country": "Namibia",
@@ -26163,7 +26163,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Sabilisation Assistance Force",
+    "name": "Sabilisation Assistance Force",
     "IATA": "",
     "ICAO": "ISF",
     "Country": "United Kingdom",
@@ -26172,7 +26172,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Security Assistance Force",
+    "name": "Security Assistance Force",
     "IATA": "",
     "ICAO": "THN",
     "Country": "Canada",
@@ -26181,7 +26181,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Trans-Air",
+    "name": "Trans-Air",
     "IATA": "",
     "ICAO": "ITH",
     "Country": "Nigeria",
@@ -26289,7 +26289,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Naft Air Lines",
+    "name": "Naft Airlines",
     "IATA": "",
     "ICAO": "IRG",
     "Country": "Iran",
@@ -26784,7 +26784,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Jade Cargo International",
+    "name": "Jade Cargo",
     "IATA": "",
     "ICAO": "JAE",
     "Country": "China",
@@ -26982,7 +26982,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Jet Aspen Air Lines",
+    "name": "Jet Aspen Airlines",
     "IATA": "",
     "ICAO": "JTX",
     "Country": "United States",
@@ -27054,7 +27054,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Jet East International",
+    "name": "Jet East",
     "IATA": "",
     "ICAO": "JED",
     "Country": "United States",
@@ -27063,7 +27063,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Jet Executive International Charter",
+    "name": "Jet Executive Charter",
     "IATA": "",
     "ICAO": "JEI",
     "Country": "Germany",
@@ -27099,7 +27099,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Jet Line International",
+    "name": "Jet Line",
     "IATA": "",
     "ICAO": "MJL",
     "Country": "Moldova",
@@ -27333,7 +27333,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Jetgo International",
+    "name": "Jetgo",
     "IATA": "",
     "ICAO": "JIC",
     "Country": "Thailand",
@@ -27387,7 +27387,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Jetrider International",
+    "name": "Jetrider",
     "IATA": "",
     "ICAO": "JRI",
     "Country": "United Kingdom",
@@ -27630,7 +27630,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Jordan International Air Cargo",
+    "name": "Jordan Air Cargo",
     "IATA": "",
     "ICAO": "JCI",
     "Country": "Jordan",
@@ -28026,7 +28026,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Keenair Charter -",
+    "name": "Keenair Charter-",
     "IATA": "",
     "ICAO": "JFK",
     "Country": "United Kingdom",
@@ -28179,7 +28179,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Khoezestan Photros Air Lines",
+    "name": "Khoezestan Photros Airlines",
     "IATA": "",
     "ICAO": "KHP",
     "Country": "Iran",
@@ -28323,7 +28323,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Kiwi International Air Lines",
+    "name": "Kiwi Airlines",
     "IATA": "KP",
     "ICAO": "KIA",
     "Country": "United States",
@@ -28368,7 +28368,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Koda International",
+    "name": "Koda",
     "IATA": "",
     "ICAO": "OYE",
     "Country": "Nigeria",
@@ -28422,7 +28422,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Koob-Corp - 96 KFT",
+    "name": "Koob-Corp-96 KFT",
     "IATA": "",
     "ICAO": "KOB",
     "Country": "Hungary",
@@ -28746,7 +28746,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "LADE - Lineas Aereas Del Estado",
+    "name": "LADE-Lineas Aereas Del Estado",
     "IATA": "",
     "ICAO": "LDE",
     "Country": "Argentina",
@@ -28755,7 +28755,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "LAI - Linea Aerea IAACA",
+    "name": "LAI-Linea Aerea IAACA",
     "IATA": "KG",
     "ICAO": "BNX",
     "Country": "Venezuela",
@@ -28827,7 +28827,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "LAP Colombia - Lineas Aereas Petroleras",
+    "name": "LAP Colombia-Lineas Aereas Petroleras",
     "IATA": "",
     "ICAO": "APT",
     "Country": "LAP",
@@ -28863,7 +28863,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "LTE International Airways",
+    "name": "LTE Airways",
     "IATA": "XO",
     "ICAO": "LTE",
     "Country": "Spain",
@@ -28881,7 +28881,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "LTU International",
+    "name": "LTU",
     "IATA": "LT",
     "ICAO": "LTU",
     "Country": "Germany",
@@ -29079,7 +29079,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Laoag International Airlines",
+    "name": "Laoag Airlines",
     "IATA": "L7",
     "ICAO": "LPN",
     "Country": "Philippines",
@@ -29169,7 +29169,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Lease-a-Plane International",
+    "name": "Lease-a-Plane",
     "IATA": "",
     "ICAO": "LPL",
     "Country": "United States",
@@ -29331,7 +29331,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Lignes Nationales Aeriennes - Linacongo",
+    "name": "Lignes Nationales Aeriennes-Linacongo",
     "IATA": "",
     "ICAO": "GCB",
     "Country": "Republic of the Congo",
@@ -30006,7 +30006,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Lynx Air International",
+    "name": "Lynx Air",
     "IATA": "",
     "ICAO": "LXF",
     "Country": "United States",
@@ -30456,7 +30456,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Manaf International Airways",
+    "name": "Manaf Airways",
     "IATA": "",
     "ICAO": "MLB",
     "Country": "Burundi",
@@ -30996,7 +30996,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Medjet International",
+    "name": "Medjet",
     "IATA": "",
     "ICAO": "MEJ",
     "Country": "United States",
@@ -31275,7 +31275,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Miami Air International",
+    "name": "Miami Air",
     "IATA": "GL",
     "ICAO": "BSK",
     "Country": "United States",
@@ -32067,7 +32067,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Myanmar Airways International",
+    "name": "Myanmar Airways",
     "IATA": "8M",
     "ICAO": "MMM",
     "Country": "Myanmar",
@@ -32256,7 +32256,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Natalco Air Lines",
+    "name": "Natalco Airlines",
     "IATA": "",
     "ICAO": "NCO",
     "Country": "S",
@@ -33318,7 +33318,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "North-West Air Transport Company - Vyborg",
+    "name": "North-West Air Transport Company-Vyborg",
     "IATA": "",
     "ICAO": "VBG",
     "Country": "Russia",
@@ -33588,7 +33588,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Notams International",
+    "name": "Notams",
     "IATA": "",
     "ICAO": "XNT",
     "Country": "United States",
@@ -33840,7 +33840,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Odyssey International",
+    "name": "Odyssey",
     "IATA": "",
     "ICAO": "ODY",
     "Country": "Canada",
@@ -33957,7 +33957,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Omni - Aviacao e Tecnologia",
+    "name": "Omni-Aviacao e Tecnologia",
     "IATA": "",
     "ICAO": "OAV",
     "Country": "Portugal",
@@ -33966,7 +33966,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Omni Air International",
+    "name": "Omni Air",
     "IATA": "OY",
     "ICAO": "OAE",
     "Country": "United States",
@@ -34407,7 +34407,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Ozark Air Lines",
+    "name": "Ozark Airlines",
     "IATA": "OZ",
     "ICAO": "OZR",
     "Country": "United States",
@@ -34668,7 +34668,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Pacific International Airlines",
+    "name": "Pacific Airlines",
     "IATA": "",
     "ICAO": "PIN",
     "Country": "United States",
@@ -34776,7 +34776,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Pakistan International Airlines",
+    "name": "Pakistan Airlines",
     "IATA": "PK",
     "ICAO": "PIA",
     "Country": "Pakistan",
@@ -35568,7 +35568,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Phoenix Air Lines",
+    "name": "Phoenix Airlines",
     "IATA": "",
     "ICAO": "PHN",
     "Country": "Brazil",
@@ -35802,7 +35802,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Pocono Air Lines",
+    "name": "Pocono Airlines",
     "IATA": "",
     "ICAO": "POC",
     "Country": "United States",
@@ -36081,7 +36081,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Pont International Airline Services",
+    "name": "Pont Airline Services",
     "IATA": "",
     "ICAO": "PSI",
     "Country": "Suriname",
@@ -36711,7 +36711,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Pyramid Air Lines",
+    "name": "Pyramid Airlines",
     "IATA": "",
     "ICAO": "PYR",
     "Country": "Egypt",
@@ -37134,7 +37134,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Radixx Solutions International",
+    "name": "Radixx Solutions",
     "IATA": "1D",
     "ICAO": "",
     "Country": "United States",
@@ -37431,7 +37431,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Regal Bahamas International Airways",
+    "name": "Regal Bahamas Airways",
     "IATA": "",
     "ICAO": "RBH",
     "Country": "Bahamas",
@@ -37503,7 +37503,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Regional Air Lines",
+    "name": "Regional Airlines",
     "IATA": "",
     "ICAO": "RGL",
     "Country": "Morocco",
@@ -37665,7 +37665,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Rich International Airways",
+    "name": "Rich Airways",
     "IATA": "",
     "ICAO": "RIA",
     "Country": "United States",
@@ -38070,7 +38070,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Rover Airways International",
+    "name": "Rover Airways",
     "IATA": "",
     "ICAO": "ROV",
     "Country": "United States",
@@ -38583,7 +38583,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Ryan International Airlines",
+    "name": "Ryan Airlines",
     "IATA": "RD",
     "ICAO": "RYN",
     "Country": "United States",
@@ -38646,7 +38646,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "SATA International",
+    "name": "SATA",
     "IATA": "S4",
     "ICAO": "RZO",
     "Country": "Portugal",
@@ -38709,7 +38709,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Shaheen Air International",
+    "name": "Shaheen Air",
     "IATA": "NL",
     "ICAO": "SAI",
     "Country": "Pakistan",
@@ -39177,7 +39177,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "SADELCA - Sociedad Aerea Del Caqueta",
+    "name": "SADELCA-Sociedad Aerea Del Caqueta",
     "IATA": "",
     "ICAO": "SDK",
     "Country": "Colombia",
@@ -39501,7 +39501,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Sky Gate International Aviation",
+    "name": "Sky Gate Aviation",
     "IATA": "",
     "ICAO": "SGD",
     "Country": "Kyrgyzstan",
@@ -39663,7 +39663,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Seoul Air International",
+    "name": "Seoul Air",
     "IATA": "",
     "ICAO": "SHI",
     "Country": "Republic of Korea",
@@ -39861,7 +39861,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Seco International",
+    "name": "Seco",
     "IATA": "",
     "ICAO": "SIJ",
     "Country": "Japan",
@@ -40266,7 +40266,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Star Service International",
+    "name": "Star Service",
     "IATA": "",
     "ICAO": "SSD",
     "Country": "France",
@@ -40311,7 +40311,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Skystar International",
+    "name": "Skystar",
     "IATA": "",
     "ICAO": "SSK",
     "Country": "United States",
@@ -40914,7 +40914,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Surninam International Victory Airline",
+    "name": "Surninam Victory Airline",
     "IATA": "",
     "ICAO": "SWO",
     "Country": "Suriname",
@@ -40941,7 +40941,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Swiss International Air Lines",
+    "name": "Swiss Airlines",
     "IATA": "LX",
     "ICAO": "SWR",
     "Country": "Switzerland",
@@ -40977,7 +40977,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Swiss European Air Lines",
+    "name": "Swiss European Airlines",
     "IATA": "",
     "ICAO": "SWU",
     "Country": "Switzerland",
@@ -41769,7 +41769,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Sark International Airways",
+    "name": "Sark Airways",
     "IATA": "",
     "ICAO": "JIM",
     "Country": "United Kingdom",
@@ -42021,7 +42021,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Sky Trek International Airlines",
+    "name": "Sky Trek Airlines",
     "IATA": "1I",
     "ICAO": "",
     "Country": "",
@@ -42309,7 +42309,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Sky Trek International Airlines",
+    "name": "Sky Trek Airlines",
     "IATA": "1I",
     "ICAO": "PZR",
     "Country": "United States",
@@ -42399,7 +42399,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Skymaster Air Lines",
+    "name": "Skymaster Airlines",
     "IATA": "",
     "ICAO": "SKC",
     "Country": "United States",
@@ -42948,7 +42948,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Southeast Airlines (Sun Jet International)",
+    "name": "Southeast Airlines (Sun Jet)",
     "IATA": "",
     "ICAO": "SNK",
     "Country": "United States",
@@ -42975,7 +42975,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Sun Pacific International",
+    "name": "Sun Pacific",
     "IATA": "",
     "ICAO": "SNP",
     "Country": "United States",
@@ -43056,7 +43056,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Southern Cargo Air Lines",
+    "name": "Southern Cargo Airlines",
     "IATA": "",
     "ICAO": "SOC",
     "Country": "Russia",
@@ -43668,7 +43668,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Trans International Express Aviation",
+    "name": "Trans Express Aviation",
     "IATA": "",
     "ICAO": "BAP",
     "Country": "United States",
@@ -43803,7 +43803,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "TAB Express International",
+    "name": "TAB Express",
     "IATA": "",
     "ICAO": "TBI",
     "Country": "United States",
@@ -43812,7 +43812,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Taban Air Lines",
+    "name": "Taban Airlines",
     "IATA": "",
     "ICAO": "TBM",
     "Country": "Iran",
@@ -44208,7 +44208,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Transafrik International",
+    "name": "Transafrik",
     "IATA": "",
     "ICAO": "TFK",
     "Country": "Sao Tome and Principe",
@@ -44352,7 +44352,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Thai Airways International",
+    "name": "Thai Airways",
     "IATA": "TG",
     "ICAO": "THA",
     "Country": "Thailand",
@@ -44469,7 +44469,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Trans International Airlines",
+    "name": "Trans Airlines",
     "IATA": "",
     "ICAO": "TIA",
     "Country": "United States",
@@ -44478,7 +44478,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Travel International Air Charters",
+    "name": "Travel Air Charters",
     "IATA": "",
     "ICAO": "TIC",
     "Country": "Zambia",
@@ -44505,7 +44505,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Tajikistan International Airlines",
+    "name": "Tajikistan Airlines",
     "IATA": "",
     "ICAO": "TIL",
     "Country": "Tajikistan",
@@ -44604,7 +44604,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Tropical International Airways",
+    "name": "Tropical Airways",
     "IATA": "",
     "ICAO": "TKX",
     "Country": "Saint Kitts and Nevis",
@@ -44892,7 +44892,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Transair International Linhas Aereas",
+    "name": "Transair Linhas Aereas",
     "IATA": "",
     "ICAO": "TNI",
     "Country": "United States",
@@ -45576,7 +45576,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "TTA - Sociedade de Transporte e Trabalho Aereo",
+    "name": "TTA-Sociedade de Transporte e Trabalho Aereo",
     "IATA": "",
     "ICAO": "TTA",
     "Country": "Mozambique",
@@ -46323,7 +46323,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Top Sky International",
+    "name": "Top Sky",
     "IATA": "",
     "ICAO": "LKW",
     "Country": "Indonesia",
@@ -46422,7 +46422,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "TNT International Aviation",
+    "name": "TNT Aviation",
     "IATA": "",
     "ICAO": "NTR",
     "Country": "United Kingdom",
@@ -47106,7 +47106,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "UK International Airlines",
+    "name": "UK Airlines",
     "IATA": "",
     "ICAO": "UKI",
     "Country": "United Kingdom",
@@ -47403,7 +47403,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Ukraine International Airlines",
+    "name": "Ukraine Airlines",
     "IATA": "PS",
     "ICAO": "AUI",
     "Country": "Ukraine",
@@ -47484,7 +47484,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Valan International Cargo Charter",
+    "name": "Valan Cargo Charter",
     "IATA": "",
     "ICAO": "VLA",
     "Country": "South Africa",
@@ -47736,7 +47736,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "VICA - Viacao Charter Aereos",
+    "name": "VICA-Viacao Charter Aereos",
     "IATA": "",
     "ICAO": "VCA",
     "Country": "Brazil",
@@ -47943,7 +47943,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Vinair - Helicoptereos",
+    "name": "Vinair-Helicoptereos",
     "IATA": "",
     "ICAO": "VIN",
     "Country": "Portugal",
@@ -48294,7 +48294,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Victoria International Airways",
+    "name": "Victoria Airways",
     "IATA": "",
     "ICAO": "WEV",
     "Country": "Uganda",
@@ -48672,7 +48672,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Western Express Air Lines",
+    "name": "Western Express Airlines",
     "IATA": "",
     "ICAO": "WES",
     "Country": "Canada",
@@ -48879,7 +48879,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Windward Islands Airways International",
+    "name": "Windward Islands Airways",
     "IATA": "",
     "ICAO": "WIA",
     "Country": "Netherland",
@@ -49077,7 +49077,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Wright Air Lines",
+    "name": "Wright Airlines",
     "IATA": "",
     "ICAO": "WRT",
     "Country": "United States",
@@ -49284,7 +49284,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Yuhi Air Lines",
+    "name": "Yuhi Airlines",
     "IATA": "",
     "ICAO": "AYU",
     "Country": "Japan",
@@ -49374,7 +49374,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Zantop International Airlines",
+    "name": "Zantop Airlines",
     "IATA": "",
     "ICAO": "ZAN",
     "Country": "United States",
@@ -49725,7 +49725,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Carnival Air Lines",
+    "name": "Carnival Airlines",
     "IATA": "KW",
     "ICAO": "",
     "Country": "United States",
@@ -50112,7 +50112,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "German Air Force - FLB",
+    "name": "German Air Force-FLB",
     "IATA": "",
     "ICAO": "FLB",
     "Country": "Germany",
@@ -50373,7 +50373,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "AJT Air International",
+    "name": "AJT Air",
     "IATA": "E9",
     "ICAO": "",
     "Country": "Russia",
@@ -51183,7 +51183,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Vision Air International",
+    "name": "Vision Air",
     "IATA": "",
     "ICAO": "VIS",
     "Country": "Pakistan",
@@ -51768,7 +51768,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "German International Air Lines",
+    "name": "German Airlines",
     "IATA": "GM",
     "ICAO": "GER",
     "Country": "Germany",
@@ -51984,7 +51984,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Air Charter International",
+    "name": "Air Charter",
     "IATA": "SF",
     "ICAO": "",
     "Country": "France",
@@ -52020,7 +52020,7 @@ export const airlines = [
     "Alternative name": "AUOS"
   },
   {
-    "name": "CB Airways UK ( Interliging Flights )",
+    "name": "CB Airways UK (Interliging Flights)",
     "IATA": "1F",
     "ICAO": "CIF",
     "Country": "United Kingdom",
@@ -52029,7 +52029,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Fly Colombia ( Interliging Flights )",
+    "name": "Fly Colombia (Interliging Flights)",
     "IATA": "3F",
     "ICAO": "3FF",
     "Country": "Colombia",
@@ -52200,7 +52200,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "LSM International",
+    "name": "LSM",
     "IATA": "II",
     "ICAO": "UWW",
     "Country": "Russia",
@@ -52254,7 +52254,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Mongolian International Air Lines",
+    "name": "Mongolian Airlines",
     "IATA": "7M",
     "ICAO": "ZTF",
     "Country": "Mongolia",
@@ -52713,7 +52713,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Mauritania Airlines International",
+    "name": "Mauritania Airlines",
     "IATA": "L6",
     "ICAO": "MAI",
     "Country": "Mauritania",
@@ -52812,7 +52812,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Georgian International Airlines",
+    "name": "Georgian Airlines",
     "IATA": "",
     "ICAO": "GNN",
     "Country": "Georgia",
@@ -52992,7 +52992,7 @@ export const airlines = [
     "Alternative name": "AirOne Polska"
   },
   {
-    "name": "Orbit International Airlines",
+    "name": "Orbit Airlines",
     "IATA": "",
     "ICAO": "OAI",
     "Country": "United States",
@@ -53235,7 +53235,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Zenith International Airline",
+    "name": "Zenith Airline",
     "IATA": "ZN",
     "ICAO": "ZNA",
     "Country": "Thailand",
@@ -53478,7 +53478,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "CheapFlyingInternational",
+    "name": "CheapFlying",
     "IATA": "WL",
     "ICAO": "FQR",
     "Country": "France",
@@ -53523,7 +53523,7 @@ export const airlines = [
     "Alternative name": "AirOneAtlantic"
   },
   {
-    "name": "HQ- Business Express",
+    "name": "HQ-Business Express",
     "IATA": "HQ",
     "ICAO": "",
     "Country": "United States",
@@ -54513,7 +54513,7 @@ export const airlines = [
     "Alternative name": "THAI Smile"
   },
   {
-    "name": "International AirLink",
+    "name": "AirLink",
     "IATA": "I4",
     "ICAO": "",
     "Country": "Jamaica",
@@ -54801,7 +54801,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Flying Service",
+    "name": "Flying Service",
     "IATA": "F4",
     "ICAO": "",
     "Country": "Italy",
@@ -54864,7 +54864,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "International Europe",
+    "name": "Europe",
     "IATA": "9I",
     "ICAO": "INE",
     "Country": "Spain",
@@ -55098,7 +55098,7 @@ export const airlines = [
     "Alternative name": ""
   },
   {
-    "name": "Norwegian Air International (D8)",
+    "name": "Norwegian Air (D8)",
     "IATA": "",
     "ICAO": "IBK",
     "Country": "Norway",
