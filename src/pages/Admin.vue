@@ -75,10 +75,12 @@
 
     <!-- Admin panel -->
     <div v-else class="admin-body">
-      <!-- Category pill tabs -->
+      <!-- Category pill tabs: built-in pill always visible, active custom (if any)
+           as a chip next to it, all other custom categories hidden behind a menu so
+           the bar stays clean even when many custom categories exist. -->
       <div class="pill-tabs-wrap">
         <button
-          v-for="cat in allCategories"
+          v-for="cat in builtInCategoriesList"
           :key="cat.key"
           type="button"
           class="pill-tab-admin"
@@ -88,12 +90,72 @@
           {{ cat.label.he }}
         </button>
         <button
+          v-if="!activeIsBuiltIn"
           type="button"
-          class="pill-tab-admin pill-add"
-          @click="openAddCategory"
-          aria-label="הוסף קטגוריה"
+          class="pill-tab-admin active"
+          @click="$refs.catMenu && $refs.catMenu.show()"
         >
-          + קטגוריה חדשה
+          {{ activeCategoryLabel }}
+        </button>
+        <button
+          type="button"
+          class="pill-tab-admin pill-menu"
+          aria-label="עוד קטגוריות ויצירה חדשה"
+        >
+          <q-icon name="menu" size="18px" />
+          <q-menu
+            ref="catMenu"
+            anchor="bottom end"
+            self="top end"
+            class="cat-menu-dropdown"
+          >
+            <q-list dense class="cat-menu-list">
+              <div v-if="customCategories.length">
+                <div class="cat-menu-header">קטגוריות מותאמות אישית</div>
+                <q-item
+                  v-for="cat in customCategories"
+                  :key="cat.key"
+                  clickable
+                  v-close-popup
+                  class="cat-menu-item"
+                  :class="{ 'cat-menu-item-active': activeCategory === cat.key }"
+                  @click="activeCategory = cat.key"
+                >
+                  <q-item-section>{{ cat.label.he }}</q-item-section>
+                  <q-item-section side>
+                    <div class="cat-menu-actions">
+                      <q-btn
+                        flat dense round size="sm"
+                        icon="edit"
+                        color="primary"
+                        aria-label="ערוך"
+                        @click.stop="onMenuEdit(cat.key)"
+                      />
+                      <q-btn
+                        flat dense round size="sm"
+                        icon="delete"
+                        color="negative"
+                        aria-label="מחק"
+                        @click.stop="onMenuDelete(cat.key)"
+                      />
+                    </div>
+                  </q-item-section>
+                </q-item>
+                <q-separator class="cat-menu-sep" />
+              </div>
+              <q-item
+                clickable
+                v-close-popup
+                class="cat-menu-add"
+                @click="openAddCategory"
+              >
+                <q-item-section avatar>
+                  <q-icon name="add" color="primary" />
+                </q-item-section>
+                <q-item-section>הוסף קטגוריה חדשה</q-item-section>
+              </q-item>
+            </q-list>
+          </q-menu>
         </button>
       </div>
 
@@ -290,6 +352,7 @@
         </div>
       </q-expansion-item>
 
+
       <!-- Danger zone (built-in categories only) -->
       <div v-if="activeIsBuiltIn" class="danger-zone">
         <div class="danger-header">
@@ -427,6 +490,7 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
   </q-page>
 </template>
 
@@ -674,6 +738,9 @@ export default {
     allCategories() {
       return [...CATEGORIES, ...this.customCategories];
     },
+    builtInCategoriesList() {
+      return CATEGORIES;
+    },
     activeIsBuiltIn() {
       return BUILT_IN_CATEGORY_KEYS.indexOf(this.activeCategory) !== -1;
     },
@@ -880,6 +947,16 @@ export default {
       if (this.activeIsBuiltIn) return;
       this.editCategoryName = this.activeCategoryLabel;
       this.showEditCategoryModal = true;
+    },
+    onMenuEdit(key) {
+      if (this.$refs.catMenu) this.$refs.catMenu.hide();
+      this.activeCategory = key;
+      this.$nextTick(() => this.openEditCategory());
+    },
+    onMenuDelete(key) {
+      if (this.$refs.catMenu) this.$refs.catMenu.hide();
+      this.activeCategory = key;
+      this.$nextTick(() => this.openDeleteCategory());
     },
     confirmEditCategory() {
       const name = this.editCategoryName.trim();
@@ -1294,6 +1371,189 @@ body.body--dark .pill-add:hover {
   background: rgba(96, 165, 250, 0.1) !important;
 }
 
+/* Hamburger menu pill — Apple-style translucent button */
+.pill-menu {
+  background: rgba(120, 120, 128, 0.12) !important;
+  border: 0.5px solid rgba(0, 0, 0, 0.04) !important;
+  color: #1c1c1e !important;
+  padding: 8px 14px !important;
+  display: inline-flex !important;
+  align-items: center;
+  margin-inline-start: 4px;
+  transition: background 0.18s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.pill-menu:hover {
+  background: rgba(120, 120, 128, 0.18) !important;
+  color: #000 !important;
+}
+
+.pill-menu:active {
+  transform: scale(0.96);
+}
+
+body.body--dark .pill-menu {
+  background: rgba(120, 120, 128, 0.24) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+body.body--dark .pill-menu:hover {
+  background: rgba(120, 120, 128, 0.36) !important;
+  color: #fff !important;
+}
+
+/* Apple-style frosted-glass dropdown */
+.cat-menu-dropdown {
+  border-radius: 14px !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  box-shadow:
+    0 0.5px 0 rgba(0, 0, 0, 0.04) inset,
+    0 0 0 0.5px rgba(0, 0, 0, 0.06),
+    0 6px 16px rgba(0, 0, 0, 0.08),
+    0 16px 40px rgba(0, 0, 0, 0.14) !important;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+body.body--dark .cat-menu-dropdown {
+  background: rgba(36, 36, 38, 0.85) !important;
+  box-shadow:
+    0 0.5px 0 rgba(255, 255, 255, 0.06) inset,
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 8px 20px rgba(0, 0, 0, 0.32),
+    0 20px 48px rgba(0, 0, 0, 0.5) !important;
+}
+
+.cat-menu-list {
+  min-width: 280px;
+  padding: 5px;
+}
+
+.cat-menu-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(60, 60, 67, 0.6);
+  letter-spacing: 0.3px;
+  padding: 8px 12px 4px;
+  font-family: $font-stack;
+}
+
+body.body--dark .cat-menu-header {
+  color: rgba(235, 235, 245, 0.55);
+}
+
+.cat-menu-item {
+  font-family: $font-stack;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px !important;
+  min-height: 36px !important;
+  border-radius: 8px;
+  margin: 1px 0;
+  color: #1c1c1e;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.cat-menu-item:hover {
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+body.body--dark .cat-menu-item {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+body.body--dark .cat-menu-item:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+.cat-menu-item-active {
+  background: rgba(0, 122, 255, 0.12) !important;
+  color: rgb(0, 122, 255) !important;
+  font-weight: 600;
+}
+
+.cat-menu-item-active:hover {
+  background: rgba(0, 122, 255, 0.18) !important;
+}
+
+body.body--dark .cat-menu-item-active {
+  background: rgba(10, 132, 255, 0.22) !important;
+  color: rgb(10, 132, 255) !important;
+}
+
+body.body--dark .cat-menu-item-active:hover {
+  background: rgba(10, 132, 255, 0.3) !important;
+}
+
+.cat-menu-actions {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.cat-menu-actions ::v-deep .q-btn {
+  opacity: 0.55;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  min-height: 28px;
+  min-width: 28px;
+}
+
+.cat-menu-item:hover .cat-menu-actions ::v-deep .q-btn {
+  opacity: 1;
+}
+
+.cat-menu-actions ::v-deep .q-btn .q-icon {
+  font-size: 17px;
+}
+
+.cat-menu-sep {
+  margin: 5px 4px !important;
+  height: 0.5px !important;
+  background: rgba(60, 60, 67, 0.12) !important;
+  opacity: 1 !important;
+}
+
+body.body--dark .cat-menu-sep {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.cat-menu-add {
+  font-family: $font-stack;
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(0, 122, 255);
+  padding: 8px 12px !important;
+  min-height: 36px !important;
+  border-radius: 8px;
+  margin: 1px 0;
+  transition: background 0.12s ease;
+}
+
+.cat-menu-add:hover {
+  background: rgba(0, 122, 255, 0.1) !important;
+}
+
+.cat-menu-add ::v-deep .q-icon {
+  color: rgb(0, 122, 255);
+  font-size: 18px;
+}
+
+body.body--dark .cat-menu-add {
+  color: rgb(10, 132, 255);
+}
+
+body.body--dark .cat-menu-add:hover {
+  background: rgba(10, 132, 255, 0.18) !important;
+}
+
+body.body--dark .cat-menu-add ::v-deep .q-icon {
+  color: rgb(10, 132, 255);
+}
+
 /* Custom-category edit/delete strip */
 .custom-cat-actions {
   display: flex;
@@ -1489,6 +1749,257 @@ body.body--dark .backup-info { color: #aab; }
 }
 
 .hidden-file-input { display: none; }
+
+/* Placeholder management — Apple-style minimal list with refined rows */
+.placeholders-section {
+  margin-top: 20px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.06),
+    0 1px 3px rgba(11, 23, 48, 0.06);
+  overflow: hidden;
+}
+
+body.body--dark .placeholders-section {
+  background: #1e1e1e;
+  box-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.placeholders-section ::v-deep .placeholders-section-header {
+  padding: 14px 18px;
+  font-family: $font-stack;
+  font-weight: 600;
+  font-size: 15px;
+  color: #1c1c1e;
+}
+
+body.body--dark .placeholders-section ::v-deep .placeholders-section-header {
+  color: #f5f5f7;
+}
+
+.placeholders-body {
+  padding: 4px 18px 18px;
+}
+
+.placeholders-info {
+  font-size: 13px;
+  color: rgba(60, 60, 67, 0.65);
+  margin: 0 0 14px;
+  line-height: 1.6;
+}
+
+body.body--dark .placeholders-info {
+  color: rgba(235, 235, 245, 0.6);
+}
+
+.placeholders-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(60, 60, 67, 0.55);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  margin: 10px 0 6px;
+  font-family: $font-stack;
+}
+
+body.body--dark .placeholders-section-title {
+  color: rgba(235, 235, 245, 0.45);
+}
+
+.placeholders-count {
+  font-weight: 400;
+  color: rgba(60, 60, 67, 0.4);
+  margin-inline-start: 2px;
+  letter-spacing: 0;
+}
+
+body.body--dark .placeholders-count {
+  color: rgba(235, 235, 245, 0.35);
+}
+
+.placeholders-list {
+  display: flex;
+  flex-direction: column;
+  background: rgba(120, 120, 128, 0.06);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+body.body--dark .placeholders-list {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.placeholder-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-family: $font-stack;
+  transition: background 0.12s ease;
+}
+
+.placeholder-row + .placeholder-row {
+  border-top: 0.5px solid rgba(60, 60, 67, 0.12);
+}
+
+body.body--dark .placeholder-row + .placeholder-row {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.placeholder-row-custom:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+body.body--dark .placeholder-row-custom:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.placeholder-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.placeholder-key {
+  font-size: 12.5px;
+  font-family: 'SF Mono', 'JetBrains Mono', 'Roboto Mono', monospace;
+  color: rgb(0, 122, 255);
+  direction: ltr;
+}
+
+body.body--dark .placeholder-key {
+  color: rgb(10, 132, 255);
+}
+
+.placeholder-label {
+  font-size: 13.5px;
+  color: #1c1c1e;
+  font-weight: 500;
+}
+
+body.body--dark .placeholder-label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.placeholder-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 3px 8px;
+  background: rgba(120, 120, 128, 0.16);
+  color: rgba(60, 60, 67, 0.7);
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+
+/* Small Apple-style "x" close button next to each custom placeholder */
+.placeholder-x-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(120, 120, 128, 0.2);
+  color: rgba(60, 60, 67, 0.8);
+  border: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.placeholder-x-btn:hover {
+  background: rgba(255, 59, 48, 0.95);
+  color: #fff;
+}
+
+.placeholder-x-btn:active {
+  transform: scale(0.9);
+}
+
+body.body--dark .placeholder-x-btn {
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+body.body--dark .placeholder-x-btn:hover {
+  background: rgba(255, 69, 58, 0.95);
+  color: #fff;
+}
+
+body.body--dark .placeholder-badge {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(235, 235, 245, 0.7);
+}
+
+.placeholders-empty {
+  font-size: 13px;
+  color: rgba(60, 60, 67, 0.5);
+  padding: 14px 16px;
+  background: rgba(120, 120, 128, 0.04);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  text-align: center;
+  font-style: italic;
+}
+
+body.body--dark .placeholders-empty {
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(235, 235, 245, 0.5);
+}
+
+.add-placeholder-btn {
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-weight: 600;
+}
+
+.builtin-placeholders-inner {
+  margin-top: 16px;
+  background: transparent;
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.builtin-placeholders-inner ::v-deep .builtin-placeholders-header {
+  font-size: 12.5px;
+  color: rgba(60, 60, 67, 0.55);
+  padding: 6px 8px;
+  min-height: 32px;
+  font-weight: 500;
+}
+
+body.body--dark .builtin-placeholders-inner ::v-deep .builtin-placeholders-header {
+  color: rgba(235, 235, 245, 0.45);
+}
+
+.builtin-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.placeholder-error {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(255, 59, 48, 0.1);
+  color: rgb(215, 38, 27);
+  font-size: 13px;
+  border-radius: 8px;
+  border: 0.5px solid rgba(255, 59, 48, 0.2);
+}
+
+body.body--dark .placeholder-error {
+  background: rgba(255, 69, 58, 0.18);
+  color: rgb(255, 105, 97);
+  border-color: rgba(255, 69, 58, 0.3);
+}
 
 .history-block {
   margin-top: 20px;

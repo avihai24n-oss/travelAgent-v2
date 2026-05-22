@@ -173,8 +173,65 @@ export default {
       chip.setAttribute("contenteditable", "false");
       chip.setAttribute("draggable", "true");
       chip.dataset.placeholder = key;
-      chip.textContent = this.labelFor(key);
+
+      const labelEl = document.createElement("span");
+      labelEl.className = "chip-token-label";
+      labelEl.textContent = this.labelFor(key);
+      chip.appendChild(labelEl);
+
+      const closeBtn = document.createElement("span");
+      closeBtn.className = "chip-close";
+      closeBtn.setAttribute("contenteditable", "false");
+      closeBtn.setAttribute("draggable", "false");
+      closeBtn.setAttribute("aria-label", this.dir === "rtl" ? "הסר שדה" : "Remove field");
+      closeBtn.title = this.dir === "rtl" ? "הסר שדה" : "Remove field";
+      closeBtn.textContent = "×";
+      // Prevent the chip's drag/selection logic from firing when interacting
+      // with the close button.
+      const swallow = e => { e.preventDefault(); e.stopPropagation(); };
+      closeBtn.addEventListener("mousedown", swallow);
+      closeBtn.addEventListener("dragstart", swallow);
+      closeBtn.addEventListener("click", e => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.requestRemoveChip(chip);
+      });
+      chip.appendChild(closeBtn);
+
       return chip;
+    },
+
+    requestRemoveChip(chipEl) {
+      if (!chipEl || !chipEl.dataset || !chipEl.dataset.placeholder) return;
+      const isHe = this.dir === "rtl";
+      const label = this.labelFor(chipEl.dataset.placeholder);
+      this.$q.dialog({
+        title: isHe ? "להסיר שדה?" : "Remove field?",
+        message: isHe
+          ? `להסיר את השדה "${label}" מהתבנית?`
+          : `Remove "${label}" from the template?`,
+        ok: {
+          label: isHe ? "הסר" : "Remove",
+          color: "negative",
+          unelevated: true,
+          noCaps: true
+        },
+        cancel: {
+          label: isHe ? "ביטול" : "Cancel",
+          flat: true,
+          color: "grey-7",
+          noCaps: true
+        },
+        persistent: false
+      }).onOk(() => {
+        this.removeChip(chipEl);
+      });
+    },
+
+    removeChip(chipEl) {
+      if (!chipEl || !chipEl.parentNode) return;
+      chipEl.parentNode.removeChild(chipEl);
+      this.emitChange();
     },
 
     serialize() {
@@ -750,24 +807,61 @@ body.body--dark .template-editor .toolbar-sep {
   background: #2563eb;
 }
 
-/* Inline placeholders inside the editor — just bold blue text, no box. */
+/* Inline placeholders inside the editor — subtle pill with built-in close button. */
 .template-editor .chip-token {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-weight: 700;
   color: #2563eb;
   cursor: grab;
   user-select: none;
   white-space: nowrap;
-  border-radius: 2px;
-  padding: 0 1px;
+  border-radius: 5px;
+  padding: 1px 5px;
+  background: rgba(37, 99, 235, 0.06);
+  vertical-align: baseline;
+  transition: background 0.12s ease;
 }
 
 .template-editor .chip-token:hover {
-  background: rgba(37, 99, 235, 0.08);
+  background: rgba(37, 99, 235, 0.14);
 }
 
 .template-editor .chip-token:active {
   cursor: grabbing;
   opacity: 0.85;
+}
+
+.template-editor .chip-token-label {
+  pointer-events: none;
+}
+
+.template-editor .chip-token .chip-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.22);
+  color: rgba(37, 99, 235, 0.85);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.template-editor .chip-token .chip-close:hover {
+  background: rgb(255, 59, 48);
+  color: #fff;
+}
+
+.template-editor .chip-token .chip-close:active {
+  transform: scale(0.88);
 }
 
 /* Ghost shown while dragging a token. */
@@ -790,8 +884,22 @@ body.body--dark .chip-ghost {
   color: #60a5fa;
 }
 
+body.body--dark .template-editor .chip-token {
+  background: rgba(96, 165, 250, 0.1);
+}
+
 body.body--dark .template-editor .chip-token:hover {
-  background: rgba(96, 165, 250, 0.15);
+  background: rgba(96, 165, 250, 0.22);
+}
+
+body.body--dark .template-editor .chip-token .chip-close {
+  background: rgba(96, 165, 250, 0.28);
+  color: rgba(96, 165, 250, 0.9);
+}
+
+body.body--dark .template-editor .chip-token .chip-close:hover {
+  background: rgb(255, 69, 58);
+  color: #fff;
 }
 
 body.body--dark .template-editor .chip-btn {

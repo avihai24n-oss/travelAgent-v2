@@ -495,6 +495,11 @@ import { airports } from "src/assets/iata";
 import { loadTemplate, FLIGHT_ITEM_KEYS, MULTI_FARE_TEMPLATES } from "src/assets/defaultTemplates.js";
 import { flagFromCountry } from "src/assets/countryFlag.js";
 import {
+  getLocalizedAirlineName,
+  airlineCodeFromFlightNumber,
+  collectUniqueAirlines
+} from "src/assets/airlineNames.js";
+import {
   parseAmadeusNames,
   translateNamesViaProxy,
   buildTravelersFromNames,
@@ -807,14 +812,26 @@ export default {
       const ticketIssuance = ticketIssuanceBase + deadline;
       const classTxt = this.$t(this.data.classOfTravel) || "XX";
 
+      // Collect every airline that appears in the parsed PNR (deduped, in PNR
+      // order). For a one-airline itinerary this is just that airline; for a
+      // multi-carrier itinerary (e.g. IB issued + LY operating, or a multi-leg
+      // trip on different airlines) the codes and names are joined with ", ".
+      // Names are localized to the preview language; codes are always the
+      // IATA identifiers and never change between languages.
+      const parsedFlights = this.getParsedFlights();
+      const { codes: airlineCode, names: airlineName } = collectUniqueAirlines(
+        parsedFlights,
+        langKey
+      );
+
       const values = {
         CUSTOMER_NAME: customerName,
         ALL_NAMES: allNames,
         GREETING: this.$t("shalom"),
         DESTINATION: this.journeyTxt,
         FLIGHTS: flightsTxt,
-        AIRLINE_NAME: "xx",
-        AIRLINE_CODE: "XX",
+        AIRLINE_NAME: airlineName,
+        AIRLINE_CODE: airlineCode,
         CLASS: classTxt,
         PRICE: this.airfareTxt,
         CURRENCY: this.selectedCurrency,
@@ -905,9 +922,17 @@ export default {
             airports[f.destAirportCode].CityNameHe) ||
           f.destAirport
         : f.destAirport;
+      // Airline NAME is localized; the FLIGHT_NUMBER (e.g. "LY543") stays
+      // verbatim in every language since it's a system identifier.
+      const flightAirlineCode = airlineCodeFromFlightNumber(f.flightNumber);
+      const localizedAirline = getLocalizedAirlineName(
+        flightAirlineCode,
+        this.selectedLang,
+        f.airline
+      );
       const map = {
         FLIGHT_DIRECTION: f.direction || "",
-        FLIGHT_AIRLINE: f.airline || "",
+        FLIGHT_AIRLINE: localizedAirline,
         FLIGHT_NUMBER: f.flightNumber || "",
         FLIGHT_ORIGIN_CITY: departCity || "",
         FLIGHT_ORIGIN_CODE: f.departAirportCode || "",

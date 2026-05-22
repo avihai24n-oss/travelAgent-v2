@@ -2,6 +2,10 @@ import { DAYS, MONTHS, CLASSES_TYPE_MAP } from "src/assets/consts.js";
 import { airlines } from "src/assets/airlines_big.js";
 import index from "airportsjs";
 import { airports } from "src/assets/iata";
+import {
+  getLocalizedAirlineName,
+  airlineCodeFromFlightNumber
+} from "src/assets/airlineNames.js";
 
 // IATA codes that aren't in the airportsjs npm dataset (e.g. railway-station
 // codes used by airline PNRs like QKL = Köln Hbf) fall back to the local
@@ -149,7 +153,13 @@ const messageMixin = {
           var isHe = this.$i18n.locale === 'he';
           var sp = isHe ? '' : ' ';
 
-          txt += `\n${flightPrefix}${line.airline}${flightDash}*${
+          var localizedAirline = getLocalizedAirlineName(
+            airlineCodeFromFlightNumber(line.flightNumber),
+            this.$i18n.locale,
+            line.airline
+          );
+
+          txt += `\n${flightPrefix}${localizedAirline}${flightDash}*${
             line.flightNumber
           }* \n${departAirport} ${
             line.departAirport === "Tel Aviv"
