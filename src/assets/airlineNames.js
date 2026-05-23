@@ -44,6 +44,11 @@ export const AIRLINE_NAMES = {
   VY: { he: "ויולינג", en: "Vueling" },
   DY: { he: "נורווגיאן", en: "Norwegian Air Shuttle" },
   EW: { he: "יורווינגס", en: "Eurowings" },
+  PC: { he: "פגסוס", en: "Pegasus" },
+  XQ: { he: "סאן אקספרס", en: "SunExpress" },
+  WK: { he: "אדלוויס אייר", en: "Edelweiss Air" },
+  OU: { he: "קרואטיה איירליינס", en: "Croatia Airlines" },
+  JU: { he: "אייר סרביה", en: "Air Serbia" },
 
   // North America
   AA: { he: "אמריקן איירליינס", en: "American Airlines" },
@@ -55,6 +60,7 @@ export const AIRLINE_NAMES = {
   AC: { he: "אייר קנדה", en: "Air Canada" },
   NK: { he: "ספיריט", en: "Spirit Airlines" },
   F9: { he: "פרונטיר", en: "Frontier Airlines" },
+  TS: { he: "אייר טרנסאט", en: "Air Transat" },
 
   // Gulf / Middle East
   EK: { he: "אמירייטס", en: "Emirates" },
@@ -65,6 +71,8 @@ export const AIRLINE_NAMES = {
   WY: { he: "עומאן אייר", en: "Oman Air" },
   GF: { he: "גאלף אייר", en: "Gulf Air" },
   SV: { he: "סעודיה", en: "Saudia" },
+  KU: { he: "כוויית איירווייז", en: "Kuwait Airways" },
+  G9: { he: "אייר ערביה", en: "Air Arabia" },
 
   // Asia / Pacific
   SQ: { he: "סינגפור איירליינס", en: "Singapore Airlines" },
@@ -83,6 +91,16 @@ export const AIRLINE_NAMES = {
   PR: { he: "פיליפינס איירליינס", en: "Philippine Airlines" },
   MH: { he: "מלזיה איירליינס", en: "Malaysia Airlines" },
   GA: { he: "גארודה אינדונזיה", en: "Garuda Indonesia" },
+  HU: { he: "היינאן איירליינס", en: "Hainan Airlines" },
+  PG: { he: "בנגקוק איירווייז", en: "Bangkok Airways" },
+
+  // Russia / CIS
+  SU: { he: "אירופלוט", en: "Aeroflot" },
+  S7: { he: "S7 איירליינס", en: "S7 Airlines" },
+
+  // Rail / Special
+  W2: { he: "דויטשה באהן רייל", en: "Deutsch Bahn Rail" },
+  HR: { he: "האהן אייר", en: "Hahn Air" },
 
   // Africa
   ET: { he: "אתיופיאן איירליינס", en: "Ethiopian Airlines" },
@@ -117,11 +135,21 @@ export function getLocalizedAirlineName(iataCode, lang, fallback) {
   return fallback || iataCode;
 }
 
-// Helper: extract the IATA prefix from a flight number like "LY543" → "LY".
-// Strips trailing digits. Returns "" if input is empty.
+// Helper: extract the IATA airline code from a flight number.
+//
+// IATA airline codes are always exactly 2 alphanumeric characters (per the
+// parser in messageMixin.js, which only accepts splitedLine[1] when it
+// matches a known IATA in airlines_big.js). So the first 2 chars of any
+// flight number ARE the airline code — regardless of whether the code
+// contains digits (W2, W6, A3, B6, 6H, ...) or is purely letters (LY, AF).
+//
+// Previously we used `replace(/\d+$/, "")` which broke for codes containing
+// trailing digits — "W6123" became "W" instead of "W6", which then failed
+// the AIRLINE_NAMES lookup and showed the English fallback name in Hebrew
+// previews.
 export function airlineCodeFromFlightNumber(flightNumber) {
   if (!flightNumber) return "";
-  return String(flightNumber).replace(/\d+$/, "");
+  return String(flightNumber).slice(0, 2);
 }
 
 // Walks the parsed flights and returns the unique set of airlines that
