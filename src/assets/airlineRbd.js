@@ -131,6 +131,29 @@ export const AIRLINE_RBD = {
     "Premium Eco Cl.": ["G", "E", "N"],
     "Economy Cl.":     ["Y", "B", "M", "U", "H", "Q", "V", "W", "S", "T", "L", "K"],
   },
+
+  // Etihad Airways
+  EY: {
+    "Business Cl.": ["J", "C", "D", "W", "Z", "P"],
+    "Economy Cl.":  ["Y", "B", "H", "K", "M", "Q", "L", "V", "U", "E", "T"],
+  },
+
+  // Aegean Airlines — NOTE: "J" appears in Economy per Gad's mapping (unusual,
+  // but kept verbatim from the source data).
+  A3: {
+    "Business Cl.": ["C", "D", "Z", "A", "I", "R"],
+    "Economy Cl.":  ["Y", "B", "M", "H", "Q", "V", "L", "K", "J", "S", "T", "U", "N", "X"],
+  },
+
+  // American Airlines — NOTE: "W" and "P" appear in both Premium Eco and
+  // Economy in the source data. Premium Eco is listed first so the resolver
+  // returns Premium for those letters (matches AA's actual fare structure
+  // where W/P are Premium Economy buckets).
+  AA: {
+    "Business Cl.":    ["C", "J", "R", "D", "I"],
+    "Premium Eco Cl.": ["W", "P"],
+    "Economy Cl.":     ["W", "P", "Y", "B", "H", "K", "M", "L", "G", "V", "S", "N", "Q", "O"],
+  },
 };
 
 // Resolves an (IATA, RBD letter) pair to a cabin-class key. Returns null if
