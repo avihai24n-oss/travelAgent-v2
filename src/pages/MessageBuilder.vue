@@ -811,6 +811,7 @@ export default {
           : "";
       const ticketIssuance = ticketIssuanceBase + deadline;
       const classTxt = this.$t(this.data.classOfTravel) || "XX";
+      const classLineTxt = this.classLineFor(this.data.classOfTravel, langKey);
 
       // Collect every airline that appears in the parsed PNR (deduped, in PNR
       // order). For a one-airline itinerary this is just that airline; for a
@@ -833,6 +834,7 @@ export default {
         AIRLINE_NAME: airlineName,
         AIRLINE_CODE: airlineCode,
         CLASS: classTxt,
+        CLASS_LINE: classLineTxt,
         PRICE: this.airfareTxt,
         CURRENCY: this.selectedCurrency,
         BAGGAGE: this.baggageList,
@@ -910,6 +912,52 @@ export default {
       }
       return out.join("\n");
     },
+    // Resolves the {{CLASS_LINE}} placeholder — the single emoji+class line
+    // that lives under the "Class of Travel" header. Spacing between emoji
+    // and asterisks is preserved verbatim from the source templates (Gad
+    // wrote them with intentional per-cabin variation).
+    //
+    // When the overall classOfTravel comes back as "combined compartment"
+    // (mixed cabins across the PNR) or as something we don't have a styled
+    // line for, we emit just the bold label with no emoji.
+    classLineFor(classOfTravel, langKey) {
+      const lang = langKey || this.selectedLang || "en";
+      const STYLED = {
+        he: {
+          "First Cl.":       "🥇 *מחלקה ראשונה*",
+          "Business Cl.":    "👔 *מחלקת עסקים*",
+          "Premium Eco Cl.": "🥂*מחלקת פרמיום*",
+          "Economy Cl.":     "💺*מחלקת תיירים*"
+        },
+        en: {
+          "First Cl.":       "🥇 *First Class*",
+          "Business Cl.":    "👔 *Business Class*",
+          "Premium Eco Cl.": "🥂*Premium Eco.*",
+          "Economy Cl.":     "💺*Economy Class*"
+        },
+        fr: {
+          "First Cl.":       "🥇 *Cl. Première*",
+          "Business Cl.":    "👔 *Cl. Affaire*",
+          "Premium Eco Cl.": "🥂 *Cl. Premium Eco*",
+          "Economy Cl.":     "💺 *Cl. Économique*"
+        }
+      };
+      const styled = (STYLED[lang] || STYLED.en)[classOfTravel];
+      if (styled) return styled;
+      const fallback = this.$t(classOfTravel || "");
+      return fallback ? `*${fallback}*` : "";
+    },
+    // Per-flight class label. When the parser couldn't resolve the RBD
+    // letter to a cabin (airline not in AIRLINE_RBD, letter not listed,
+    // charter PNR, or anything else returning null), we fall back to the
+    // original "Economy/Premium/Business Class" placeholder so the line
+    // still reads naturally in the message.
+    flightClassDisplay(flightClass) {
+      if (flightClass) return this.$t(flightClass);
+      if (this.selectedLang === "he") return "מחלקת תיירים/עסקים/פרמיום";
+      if (this.selectedLang === "fr") return "Classe Économique/Premium/Affaires";
+      return "Economy/Premium/Business Class";
+    },
     renderFlightBlock(blockTpl, f) {
       const isHe = this.selectedLang === "he";
       const departCity = isHe
@@ -946,7 +994,7 @@ export default {
         FLIGHT_ARRIVE_DATE: f.destDateNumberStr || "",
         FLIGHT_ARRIVE_MONTH: this.$t(f.destMonth),
         FLIGHT_ARRIVE_TIME: f.destTime || "",
-        FLIGHT_CLASS: this.$t(f.flightClass || "") || ""
+        FLIGHT_CLASS: this.flightClassDisplay(f.flightClass)
       };
       return blockTpl.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
         map[key] !== undefined ? map[key] : m

@@ -43,6 +43,7 @@ export const PLACEHOLDERS = {
   AIRLINE_NAME: { he: "חברת תעופה", en: "Airline", fr: "Compagnie" },
   AIRLINE_CODE: { he: "קוד חברה", en: "Airline code", fr: "Code compagnie" },
   CLASS: { he: "מחלקה", en: "Class", fr: "Classe" },
+  CLASS_LINE: { he: "שורת מחלקה (אימוג'י + שם)", en: "Class line (emoji + name)", fr: "Ligne de classe (emoji + nom)" },
   PRICE: { he: "מחיר", en: "Price", fr: "Prix" },
   CURRENCY: { he: "מטבע", en: "Currency", fr: "Devise" },
   BAGGAGE: { he: "כבודה", en: "Baggage", fr: "Bagages" },
@@ -76,7 +77,7 @@ export const DEFAULT_TEMPLATES = {
 *{{FLIGHT_DIRECTION}}*
 טיסת {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ⬅️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
-*מחלקת תיירים/עסקים/פרמיום*
+*{{FLIGHT_CLASS}}*
 ממריא {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 נוחת    {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
 💺 מושב *XX*
@@ -84,7 +85,7 @@ export const DEFAULT_TEMPLATES = {
 *{{FLIGHT_DIRECTION}}*
 טיסת {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ({{FLIGHT_ORIGIN_CODE}}) ⬅️ {{FLIGHT_DEST_CITY}}
-*מחלקת תיירים/עסקים/פרמיום*
+*{{FLIGHT_CLASS}}*
 ממריא {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 נוחת    {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
 💺 מושב *XX*
@@ -92,8 +93,8 @@ export const DEFAULT_TEMPLATES = {
 *חברת התעופה:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
 
-*מחלקת שירות* 💺
-*{{CLASS}}*
+*מחלקת הנסיעה*✈️
+{{CLASS_LINE}}
 
 *💲עלות הכרטיסים*💳
 {{PRICE}}
@@ -135,7 +136,7 @@ Please, kindly *reply (from within this WhatsApp message)* with your *tickets is
 *{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
-*Economy/Premium/Business Class*
+*{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
 💺 Seat *XX*
@@ -143,7 +144,7 @@ Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FL
 *{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ({{FLIGHT_ORIGIN_CODE}}) ➡️ {{FLIGHT_DEST_CITY}}
-*Economy/Premium/Business Class*
+*{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
 💺 Seat *XX*
@@ -151,8 +152,8 @@ Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FL
 *Airline:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
 
-*Compartment* 💺
-*{{CLASS}}*
+*Class of Travel* ✈️
+{{CLASS_LINE}}
 
 🎫 *AIRFARE* 💲
 {{PRICE}}
@@ -197,7 +198,7 @@ Merci de *répondre (depuis ce message WhatsApp)* avec ta *validation d'émissio
 *{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
-*Economy/Premium/Business Class*
+*{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
 💺 Siege *XX*
@@ -205,7 +206,7 @@ Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLI
 *{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ({{FLIGHT_ORIGIN_CODE}}) ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
-*Economy/Premium/Business Class*
+*{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
 💺 Siege *XX*
@@ -213,8 +214,8 @@ Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLI
 *Compagnie:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
 
-*Compartiment* 💺
-*{{CLASS}}*
+*Classe de voyage* ✈️
+{{CLASS_LINE}}
 
 🎫 *PRIX* 💲
 {{PRICE}}
@@ -272,7 +273,7 @@ Please reply directly to this WhatsApp message with:
 *{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
-*Economy/Premium/Business Class*
+*{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
 💺 Seat *XX*
@@ -280,7 +281,7 @@ Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FL
 *{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
 {{FLIGHT_ORIGIN_CITY}} ({{FLIGHT_ORIGIN_CODE}}) ➡️ {{FLIGHT_DEST_CITY}}
-*Economy/Premium/Business Class*
+*{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
 💺 Seat *XX*
@@ -288,8 +289,8 @@ Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FL
 *Airline:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
 
-*Compartment* 💺
-*{{CLASS}}*
+*Class of Travel* ✈️
+{{CLASS_LINE}}
 
 *AIRFARE OPTIONS* 🎫
 For the same itinerary above, you may choose one of the following *3 fare options*:
@@ -597,6 +598,30 @@ export function deleteCustomCategory(key) {
   return true;
 }
 
+// Older saved templates baked a static "Economy/Premium/Business Class" line
+// per flight, and a separate "*Compartment* 💺 / *{{CLASS}}*" summary block
+// whose label/emoji didn't match the per-cabin styling Gad now wants. The
+// renderer resolves the per-flight cabin from the RBD letter via
+// {{FLIGHT_CLASS}}, and the summary block via {{CLASS_LINE}}, so on load
+// we silently upgrade saved text to the new placeholder shapes. Idempotent.
+function migrateFlightClassPlaceholder(value) {
+  if (typeof value !== "string" || !value) return value;
+  let out = value
+    .split("*מחלקת תיירים/עסקים/פרמיום*").join("*{{FLIGHT_CLASS}}*")
+    .split("*Economy/Premium/Business Class*").join("*{{FLIGHT_CLASS}}*")
+    .split("*Classe Économique/Premium/Affaires*").join("*{{FLIGHT_CLASS}}*");
+
+  const OLD_COMPARTMENT_BLOCKS = [
+    { from: "*מחלקת שירות* 💺\n*{{CLASS}}*", to: "*מחלקת הנסיעה*✈️\n{{CLASS_LINE}}" },
+    { from: "*Compartment* 💺\n*{{CLASS}}*",   to: "*Class of Travel* ✈️\n{{CLASS_LINE}}" },
+    { from: "*Compartiment* 💺\n*{{CLASS}}*",  to: "*Classe de voyage* ✈️\n{{CLASS_LINE}}" }
+  ];
+  for (const { from, to } of OLD_COMPARTMENT_BLOCKS) {
+    out = out.split(from).join(to);
+  }
+  return out;
+}
+
 export function loadTemplate(category, lang) {
   try {
     const saved = window.localStorage.getItem(storageKey(category, lang));
@@ -604,7 +629,7 @@ export function loadTemplate(category, lang) {
     // pre-fix structure — we'd rather render the up-to-date default than the
     // broken save. Custom categories are always honoured as-is.
     if (saved !== null && !(category === "flight" && isOutdatedFlightTemplate(saved))) {
-      return saved;
+      return migrateFlightClassPlaceholder(saved);
     }
   } catch (e) {
     // localStorage unavailable — fall back to default

@@ -6,6 +6,7 @@ import {
   getLocalizedAirlineName,
   airlineCodeFromFlightNumber
 } from "src/assets/airlineNames.js";
+import { resolveFlightClass } from "src/assets/airlineRbd.js";
 
 // IATA codes that aren't in the airportsjs npm dataset (e.g. railway-station
 // codes used by airline PNRs like QKL = Köln Hbf) fall back to the local
@@ -148,7 +149,9 @@ const messageMixin = {
 
           var flightPrefix = this.$i18n.locale === 'he' ? '' : this.prefixFlight;
           var flightDash = this.$i18n.locale === 'he' ? ' – ' : ' - ';
-          var classLine = this.$i18n.locale === 'he' ? '' : ('\n' + this.$t(this.$t(line.flightClass)));
+          var classLine = this.$i18n.locale === 'he'
+            ? ''
+            : ('\n' + this.flightClassFallback(line.flightClass, this.$i18n.locale));
 
           var isHe = this.$i18n.locale === 'he';
           var sp = isHe ? '' : ' ';
@@ -312,14 +315,13 @@ const messageMixin = {
         line.destMinutes = line.destTime.substr(3, 5);
         line.departHour = line.departTime.substr(0, 2);
         line.departMinutes = line.departTime.substr(3, 5);
-        let flightClass;
-        for (const key in CLASSES_TYPE_MAP) {
-          if (CLASSES_TYPE_MAP[key].some(l => l === latterOfclassOfTravel)) {
-            flightClass = key;
-            break;
-          }
-        }
-        line.flightClass = flightClass;
+        // Per-airline RBD → cabin mapping. Returns null when the airline
+        // isn't in our table or the letter isn't listed for it; renderer
+        // shows the language-appropriate placeholder in that case.
+        line.flightClass = resolveFlightClass(
+          splitedLine[1],
+          latterOfclassOfTravel
+        );
         if (line.departMonth === line.destMonth) {
           line.destDay =
             line.departDateNumberOnly !== line.destDateNumberOnly
@@ -348,7 +350,10 @@ const messageMixin = {
         dayNumber;
 
       latterOfclassOfTravel = splitedLine[3];
-      line.flightClass = this.setClassOfTravel(latterOfclassOfTravel);
+      line.flightClass = this.setClassOfTravel(
+        latterOfclassOfTravel,
+        splitedLine[1]
+      );
       const airlineEntry = airlines.filter(item => item.IATA === splitedLine[1])[0];
       if (!airlineEntry) return;
       line.airline = airlineEntry.name;
@@ -424,18 +429,29 @@ const messageMixin = {
 
       return line.split(/(\s+)/).filter(e => e.trim().length > 0);
     },
-    setClassOfTravel(latterOfclassOfTravel) {
-      let isInClass = false,
-        flightClass;
+    // Renders flightClass with a language-appropriate placeholder when the
+    // parser couldn't resolve the RBD (airline missing from AIRLINE_RBD,
+    // letter not listed, charter, etc.) — keeps the line readable instead
+    // of producing an empty "*  *" in the message.
+    flightClassFallback(flightClass, locale) {
+      if (flightClass) return this.$t(flightClass);
+      if (locale === "he") return "מחלקת תיירים/עסקים/פרמיום";
+      if (locale === "fr") return "Classe Économique/Premium/Affaires";
+      return "Economy/Premium/Business Class";
+    },
+    setClassOfTravel(latterOfclassOfTravel, airlineIATA) {
+      // Per-airline RBD lookup; null when unknown — caller / renderer fall
+      // back to the language-appropriate placeholder. The overall
+      // data.classOfTravel summary still uses the global CLASSES_TYPE_MAP so
+      // a "combined compartment" badge keeps appearing for mixed-cabin PNRs
+      // even when one of the carriers isn't in AIRLINE_RBD yet.
+      const flightClass = resolveFlightClass(airlineIATA, latterOfclassOfTravel);
       for (const key in CLASSES_TYPE_MAP) {
-        isInClass = CLASSES_TYPE_MAP[key].some(
-          latter => latter === latterOfclassOfTravel
-        );
-        if (isInClass) {
-          flightClass = key;
+        if (CLASSES_TYPE_MAP[key].some(l => l === latterOfclassOfTravel)) {
           if (this.data.classOfTravel && this.data.classOfTravel !== key) {
             this.data.classOfTravel = "combined compartment";
           } else this.data.classOfTravel = key;
+          break;
         }
       }
       return flightClass;

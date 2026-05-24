@@ -529,10 +529,11 @@ const PREVIEW_SAMPLES = {
     GREETING: "שלום!",
     DESTINATION: "מדריד",
     FLIGHTS:
-      "*מסלול הטיסות 🌍*\n\n*טיסה/ות הלוך🛫*\nטיסת El Al - *LY543*\nתל אביב ⬅️ אתונה (ATH)\n*מחלקת תיירים/עסקים/פרמיום*\nממריא יום ג' 19 מאי 19:30\nנוחת    יום ג' 19 מאי 21:40\n💺 מושב *XX*\n\n*טיסה/ות חזור 🛬*\nטיסת El Al - *LY542*\nאתונה (ATH) ⬅️ תל אביב\n*מחלקת תיירים/עסקים/פרמיום*\nממריא יום ב' 25 מאי 10:35\nנוחת    יום ב' 25 מאי 12:35\n💺 מושב *XX*",
+      "*מסלול הטיסות 🌍*\n\n*טיסה/ות הלוך🛫*\nטיסת El Al - *LY543*\nתל אביב ⬅️ אתונה (ATH)\n*תיירים*\nממריא יום ג' 19 מאי 19:30\nנוחת    יום ג' 19 מאי 21:40\n💺 מושב *XX*\n\n*טיסה/ות חזור 🛬*\nטיסת El Al - *LY542*\nאתונה (ATH) ⬅️ תל אביב\n*תיירים*\nממריא יום ב' 25 מאי 10:35\nנוחת    יום ב' 25 מאי 12:35\n💺 מושב *XX*",
     AIRLINE_NAME: "EL AL",
     AIRLINE_CODE: "LY",
     CLASS: "מחלקת תיירים",
+    CLASS_LINE: "💺*מחלקת תיירים*",
     PRICE: "👈 *$500 מבוגר x2*",
     CURRENCY: "$",
     BAGGAGE: "✅ מזוודה אחת 23 ק\"ג\n✅ כבודת יד",
@@ -548,10 +549,11 @@ const PREVIEW_SAMPLES = {
     GREETING: "Shalom!",
     DESTINATION: "Madrid",
     FLIGHTS:
-      "*Itinerary 🌍*\n\n*Outbound flight🛫*\nEl Al - *LY543*\nTel-aviv ➡️ Athens (ATH)\n*Economy/Premium/Business Class*\nDpt. Tue. 19 MAY 19:30\nArr.  Tue. 19 MAY 21:40\n💺 Seat *XX*\n\n*Inbound flight 🛬*\nEl Al - *LY542*\nAthens (ATH) ➡️ Tel-aviv\n*Economy/Premium/Business Class*\nDpt. Mon. 25 MAY 10:35\nArr.  Mon. 25 MAY 12:35\n💺 Seat *XX*",
+      "*Itinerary 🌍*\n\n*Outbound flight🛫*\nEl Al - *LY543*\nTel-aviv ➡️ Athens (ATH)\n*Economy Cl.*\nDpt. Tue. 19 MAY 19:30\nArr.  Tue. 19 MAY 21:40\n💺 Seat *XX*\n\n*Inbound flight 🛬*\nEl Al - *LY542*\nAthens (ATH) ➡️ Tel-aviv\n*Economy Cl.*\nDpt. Mon. 25 MAY 10:35\nArr.  Mon. 25 MAY 12:35\n💺 Seat *XX*",
     AIRLINE_NAME: "EL AL",
     AIRLINE_CODE: "LY",
-    CLASS: "Economy",
+    CLASS: "Economy Class",
+    CLASS_LINE: "💺*Economy Class*",
     PRICE: "  2 adult * $500",
     CURRENCY: "$",
     BAGGAGE: "✅ 1 checked bag 23 kg\n✅ Carry-on",
@@ -567,10 +569,11 @@ const PREVIEW_SAMPLES = {
     GREETING: "Shalom!",
     DESTINATION: "Madrid",
     FLIGHTS:
-      "*Itinéraire 🌍*\n\n*Vol aller 🛫*\nEl Al - *LY543*\nTel-aviv ➡️ Athens (ATH)\n*Economy/Premium/Business Class*\nDpt. Mar 19 MAI 19:30\nArr.  Mar 19 MAI 21:40\n💺 Siege *XX*\n\n*Vol retour 🛬*\nEl Al - *LY542*\nAthens (ATH) ➡️ Tel-aviv (TLV)\n*Economy/Premium/Business Class*\nDpt. Lun 25 MAI 10:35\nArr.  Lun 25 MAI 12:35\n💺 Siege *XX*",
+      "*Itinéraire 🌍*\n\n*Vol aller 🛫*\nEl Al - *LY543*\nTel-aviv ➡️ Athens (ATH)\n*Economy Cl.*\nDpt. Mar 19 MAI 19:30\nArr.  Mar 19 MAI 21:40\n💺 Siege *XX*\n\n*Vol retour 🛬*\nEl Al - *LY542*\nAthens (ATH) ➡️ Tel-aviv (TLV)\n*Economy Cl.*\nDpt. Lun 25 MAI 10:35\nArr.  Lun 25 MAI 12:35\n💺 Siege *XX*",
     AIRLINE_NAME: "EL AL",
     AIRLINE_CODE: "LY",
-    CLASS: "Économie",
+    CLASS: "Cl. Économique",
+    CLASS_LINE: "💺 *Cl. Économique*",
     PRICE: "  2 adulte * $500",
     CURRENCY: "$",
     BAGGAGE: "✅ 1 bagage en soute 23 kg\n✅ Bagage cabine",
@@ -642,7 +645,7 @@ const PREVIEW_FLIGHTS = {
       FLIGHT_ARRIVE_DATE: "19",
       FLIGHT_ARRIVE_MONTH: "MAY",
       FLIGHT_ARRIVE_TIME: "21:40",
-      FLIGHT_CLASS: "Economy"
+      FLIGHT_CLASS: "Economy Class"
     },
     {
       FLIGHT_DIRECTION: "Inbound flight 🛬",
@@ -661,7 +664,7 @@ const PREVIEW_FLIGHTS = {
       FLIGHT_ARRIVE_DATE: "25",
       FLIGHT_ARRIVE_MONTH: "MAY",
       FLIGHT_ARRIVE_TIME: "12:35",
-      FLIGHT_CLASS: "Economy"
+      FLIGHT_CLASS: "Economy Class"
     }
   ],
   fr: [
@@ -682,7 +685,7 @@ const PREVIEW_FLIGHTS = {
       FLIGHT_ARRIVE_DATE: "19",
       FLIGHT_ARRIVE_MONTH: "MAI",
       FLIGHT_ARRIVE_TIME: "21:40",
-      FLIGHT_CLASS: "Économie"
+      FLIGHT_CLASS: "Cl. Économique"
     },
     {
       FLIGHT_DIRECTION: "Vol retour 🛬",
@@ -701,7 +704,7 @@ const PREVIEW_FLIGHTS = {
       FLIGHT_ARRIVE_DATE: "25",
       FLIGHT_ARRIVE_MONTH: "MAI",
       FLIGHT_ARRIVE_TIME: "12:35",
-      FLIGHT_CLASS: "Économie"
+      FLIGHT_CLASS: "Cl. Économique"
     }
   ]
 };
