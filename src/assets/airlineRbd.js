@@ -31,7 +31,7 @@ export const AIRLINE_RBD = {
   LY: {
     "Business Cl.":    ["C", "I", "D", "Z", "J", "X"],
     "Premium Eco Cl.": ["W", "Q", "B", "P", "A"],
-    "Economy Cl.":     ["Y", "M", "K", "V", "H", "L", "N", "G", "O", "U", "E"],
+    "Economy Cl.":     ["Y", "M", "K", "V", "S", "L", "H", "N", "G", "O", "U", "E"],
   },
 
   // Lufthansa
