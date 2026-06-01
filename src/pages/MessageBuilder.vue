@@ -363,55 +363,134 @@
     </div>
 
     <!-- PREVIEW TAB -->
-    <div v-else class="content-area">
-      <div class="section-card preview-card">
-        <div class="section-header">
-          <span class="section-icon">&#128172;</span>
-          <span>WhatsApp Message Preview</span>
-        </div>
-        <div class="section-body">
-          <button
-            v-if="selectedLang === 'en'"
-            type="button"
-            class="multi-fare-toggle"
-            :class="{ active: useMultiFareMode }"
-            @click="onToggleMultiFare"
-          >
-            <span class="multi-fare-toggle-icon">{{ useMultiFareMode ? '✓' : '🎫' }}</span>
-            <span class="multi-fare-toggle-label">
-              {{ useMultiFareMode ? 'Standard quote' : 'Multi-fare quote (OPTIMA / COMFORT / FLEX)' }}
-            </span>
-          </button>
-          <WhatsAppPhonePreview
-            :text="whatsappMessage"
-            :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
-            :contact-name="previewContactName"
-            @update:text="whatsappMessage = $event"
-          />
-          <div class="preview-actions">
-            <q-btn
-              @click="onCopyMessage"
-              class="copy-msg-btn"
-              unelevated
-              no-caps
-              color="primary"
-              icon="content_copy"
-              :label="copyBtnLabel"
-              :disable="!whatsappMessage"
-              size="md"
+    <!--
+      Outer wrapper widens beyond the standard 640px so the section-toggles
+      panel has room to sit beside the preview card without shifting the
+      phone mockup off-center. The preview-card itself keeps its old
+      640px-centered position via the 3-column grid below.
+    -->
+    <div v-else class="content-area preview-tab-area">
+      <div class="preview-and-toggles">
+        <div class="section-card preview-card">
+          <div class="section-header">
+            <span class="section-icon">&#128172;</span>
+            <span>WhatsApp Message Preview</span>
+          </div>
+          <div class="section-body">
+            <q-select
+              v-if="categoryOptions.length > 1"
+              v-model="selectedTemplateCategory"
+              :options="categoryOptions"
+              emit-value
+              map-options
+              dense
+              outlined
+              class="template-picker"
+              :label="selectedLang === 'he' ? 'תבנית' : selectedLang === 'fr' ? 'Modèle' : 'Template'"
+              @input="onTemplateCategoryChange"
             />
-            <q-btn
-              @click="onRedirectToWhatsapp"
-              class="send-btn"
-              unelevated
-              no-caps
-              color="positive"
-              icon="send"
-              label="Send to WhatsApp"
-              size="md"
+            <button
+              v-if="selectedLang === 'en'"
+              type="button"
+              class="multi-fare-toggle"
+              :class="{ active: useMultiFareMode }"
+              @click="onToggleMultiFare"
+            >
+              <span class="multi-fare-toggle-icon">{{ useMultiFareMode ? '✓' : '🎫' }}</span>
+              <span class="multi-fare-toggle-label">
+                {{ useMultiFareMode ? 'Standard quote' : 'Multi-fare quote (OPTIMA / COMFORT / FLEX)' }}
+              </span>
+            </button>
+            <WhatsAppPhonePreview
+              :text="whatsappMessage"
+              :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
+              :contact-name="previewContactName"
+              @update:text="whatsappMessage = $event"
             />
+            <div class="preview-actions">
+              <q-btn
+                @click="onCopyMessage"
+                class="copy-msg-btn"
+                unelevated
+                no-caps
+                color="primary"
+                icon="content_copy"
+                :label="copyBtnLabel"
+                :disable="!whatsappMessage"
+                size="md"
+              />
+              <q-btn
+                @click="onRedirectToWhatsapp"
+                class="send-btn"
+                unelevated
+                no-caps
+                color="positive"
+                icon="send"
+                label="Send to WhatsApp"
+                size="md"
+              />
+            </div>
           </div>
         </div>
+        <!--
+          Section-toggles panel — sibling of the preview-card so the phone
+          mockup keeps its centered position. On wide screens the panel
+          anchors to the right column of the grid (visual right regardless
+          of RTL/LTR); on narrow screens it collapses to a horizontal
+          scrollable chip strip above the card.
+        -->
+        <aside
+          v-if="availableSections.length"
+          class="section-toggles"
+          :class="{ 'is-expanded': sectionsExpanded }"
+          :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
+        >
+          <!--
+            On mobile the header acts as the accordion trigger; on desktop
+            CSS disables pointer-events and hides the chevron so it reads as
+            a plain title and the list is always visible. activeSectionsCount
+            renders a small badge so Gad sees at a glance how many sections
+            are on without opening the list.
+          -->
+          <button
+            type="button"
+            class="section-toggles-header"
+            @click="onToggleSectionsPanel"
+            :aria-expanded="sectionsExpanded ? 'true' : 'false'"
+          >
+            <span class="section-toggles-title">
+              Optional sections
+            </span>
+            <span v-if="activeSectionsCount" class="section-toggles-badge">{{ activeSectionsCount }}</span>
+            <q-icon name="expand_more" class="section-toggles-chevron" />
+          </button>
+          <div class="section-toggles-list">
+            <template v-for="item in groupedSections">
+              <div
+                v-if="item.type === 'group-header'"
+                :key="'gh-' + item.group"
+                class="section-toggle-group"
+              >
+                {{ groupHeaderLabel(item.group) }}
+              </div>
+              <label
+                v-else
+                :key="item.sec.key"
+                class="section-toggle-row"
+                :class="{ 'is-on': sectionToggles[item.sec.key], 'is-sub': item.sec.group }"
+              >
+                <span class="section-toggle-icon">{{ item.sec.icon }}</span>
+                <span class="section-toggle-label">{{ englishSectionLabel(item.sec) }}</span>
+                <q-checkbox
+                  v-model="sectionToggles[item.sec.key]"
+                  dense
+                  class="section-toggle-control"
+                  @input="onSectionToggleChange"
+                />
+              </label>
+            </template>
+          </div>
+        </aside>
       </div>
     </div>
 
@@ -492,13 +571,26 @@ import {
 import messageMixin from "./messageMixin";
 import { LocalStorage } from "quasar";
 import { airports } from "src/assets/iata";
-import { loadTemplate, FLIGHT_ITEM_KEYS, MULTI_FARE_TEMPLATES } from "src/assets/defaultTemplates.js";
+import {
+  loadTemplate,
+  FLIGHT_ITEM_KEYS,
+  MULTI_FARE_TEMPLATES,
+  CATEGORIES,
+  loadCustomCategories
+} from "src/assets/defaultTemplates.js";
+import {
+  autofillTemplate,
+  OPTIONAL_SECTIONS,
+  SECTION_SUPPORT
+} from "src/assets/templateAutofill.js";
 import { flagFromCountry } from "src/assets/countryFlag.js";
 import {
   getLocalizedAirlineName,
   airlineCodeFromFlightNumber,
   collectUniqueAirlines
 } from "src/assets/airlineNames.js";
+import { getSeatTypesSuffix } from "src/assets/seatPositions.js";
+import { getLocalizedMealName } from "src/assets/mealCodes.js";
 import {
   parseAmadeusNames,
   translateNamesViaProxy,
@@ -541,7 +633,25 @@ export default {
       whatsappMessage: "",
       darkMode: false,
       ticketIssuanceDeadline: "",
-      useMultiFareMode: false
+      useMultiFareMode: false,
+      // Pilot: lets Gad pick which template fills with the Amadeus PNR data.
+      // "flight" is the in-code default; other entries come from the custom
+      // categories he created in Admin (synced from Supabase on app boot).
+      // For Hebrew we default to Gad's Standard Airfare Quote — the picker
+      // value is restored from localStorage on mount if he had picked
+      // something else previously.
+      selectedTemplateCategory: "flight",
+      availableCustomCategories: [],
+      // Map of optional-section keys → true/false. Renders as a checkbox
+      // group below the picker (Hebrew only for now). Persisted per
+      // (lang, category) pair so each language/template combo remembers
+      // its own state across reloads.
+      sectionToggles: {},
+      // Accordion state for the toggle panel — only affects mobile (<1100px).
+      // Desktop CSS force-shows the list regardless of this flag, so the
+      // value here is "mobile collapsed/expanded" only. Default `false`
+      // (collapsed) so the WhatsApp preview is the first thing visible.
+      sectionsExpanded: false
     };
   },
   created() {
@@ -551,6 +661,14 @@ export default {
   },
   mounted() {
     this.refreshApiStatus();
+    // Bootstrap (src/boot/templateSync.js) is awaited before the app renders,
+    // so by the time we mount the custom categories are in localStorage.
+    this.availableCustomCategories = loadCustomCategories();
+    this.selectedTemplateCategory = this.loadPickerChoice(this.selectedLang);
+    this.sectionToggles = this.loadSectionToggles(
+      this.selectedLang,
+      this.selectedTemplateCategory
+    );
   },
   methods: {
     onAddTraveler() {
@@ -695,6 +813,115 @@ export default {
       this.useMultiFareMode = !this.useMultiFareMode;
       this.onPreview();
     },
+    onTemplateCategoryChange() {
+      // Multi-fare toggle only makes sense for the in-code `flight` template;
+      // reset it when switching away so the picker's choice fully drives the
+      // preview.
+      if (this.selectedTemplateCategory !== "flight") {
+        this.useMultiFareMode = false;
+      }
+      this.savePickerChoice(this.selectedLang, this.selectedTemplateCategory);
+      this.sectionToggles = this.loadSectionToggles(
+        this.selectedLang,
+        this.selectedTemplateCategory
+      );
+      this.onPreview();
+    },
+    onSectionToggleChange() {
+      this.saveSectionToggles(
+        this.selectedLang,
+        this.selectedTemplateCategory,
+        this.sectionToggles
+      );
+      this.onPreview();
+    },
+    onToggleSectionsPanel() {
+      this.sectionsExpanded = !this.sectionsExpanded;
+    },
+    // Group-header labels for the optional-sections panel. Locked to
+    // English on purpose — the panel is agent UI chrome, not customer-
+    // facing text, and Gad wants the same labels regardless of which
+    // preview language is selected.
+    groupHeaderLabel(group) {
+      const labels = {
+        preferences: "🧑‍✈️ Per-flight preferences",
+        addons: "🟦 Optional Add-Ons"
+      };
+      return labels[group] || "";
+    },
+    // English label for a section row, found by key in OPTIONAL_SECTIONS.en.
+    // The keys are 1:1 across he / en / fr by design, so a Hebrew preview
+    // that lists the same `pref_meal` toggle still shows "Meal preference"
+    // here. Falls back to the section's own label if the English entry is
+    // missing for any reason (defensive — keys should always be in `en`).
+    englishSectionLabel(sec) {
+      if (!sec || !sec.key) return "";
+      const enList = OPTIONAL_SECTIONS.en || [];
+      const found = enList.find(s => s.key === sec.key);
+      return (found && found.label) || sec.label || "";
+    },
+    // Per-language picker choice — keyed by lang so EN/HE/FR each remember
+    // their own preferred template independently. Default for Hebrew is
+    // Gad's Standard Airfare Quote (custom_mpsx5w8le42j); other langs fall
+    // back to the in-code `flight` template.
+    pickerStorageKey(lang) {
+      return `pickerChoice:${lang}`;
+    },
+    loadPickerChoice(lang) {
+      try {
+        const saved = window.localStorage.getItem(this.pickerStorageKey(lang));
+        if (saved) {
+          // Validate against current options — if the category was deleted
+          // we don't want a stale key.
+          const found = this.categoryOptions.find(o => o.value === saved);
+          if (found) return saved;
+        }
+      } catch (e) { /* localStorage unavailable */ }
+      // Languages that ship Gad's Standard Airfare Quote with autofill
+      // patterns default to it; others stay on the in-code `flight` template.
+      const standardLangs = ["he", "en", "fr"];
+      return standardLangs.includes(lang) ? "custom_mpsx5w8le42j" : "flight";
+    },
+    savePickerChoice(lang, category) {
+      try {
+        window.localStorage.setItem(this.pickerStorageKey(lang), category);
+      } catch (e) { /* localStorage full / private mode */ }
+    },
+    sectionTogglesKey(lang, category) {
+      return `sectionToggles:${lang}:${category}`;
+    },
+    loadSectionToggles(lang, category) {
+      // Always start from an "all keys explicitly false" baseline so the
+      // q-checkbox v-model has a definitive boolean — `undefined` renders
+      // as Quasar's indeterminate "-" state, which we don't want here.
+      // Any persisted value layers on top.
+      const base = {};
+      for (const sec of OPTIONAL_SECTIONS[lang] || []) {
+        base[sec.key] = false;
+      }
+      try {
+        const raw = window.localStorage.getItem(
+          this.sectionTogglesKey(lang, category)
+        );
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            for (const k of Object.keys(parsed)) {
+              if (k in base) base[k] = !!parsed[k];
+            }
+          }
+        }
+      } catch (e) { /* unparseable / unavailable — keep the all-false base */ }
+      return base;
+    },
+    saveSectionToggles(lang, category, toggles) {
+      try {
+        window.localStorage.setItem(
+          this.sectionTogglesKey(lang, category),
+          JSON.stringify(toggles || {})
+        );
+      } catch (e) { /* localStorage full */ }
+    },
     async onCopyMessage() {
       const text = this.whatsappMessage || "";
       if (!text) return;
@@ -789,10 +1016,25 @@ export default {
     },
     buildFromCustomTemplate(flightsTxt) {
       const langKey = this.selectedLang;
+      // Multi-fare toggle still wins when active (English `flight` only),
+      // otherwise we load whichever category the new picker selected. For
+      // `flight` this is the in-code default; for custom categories it's the
+      // Supabase row Gad authored.
       const multiFareTpl =
         this.useMultiFareMode && MULTI_FARE_TEMPLATES[langKey];
-      const tpl = multiFareTpl || loadTemplate("flight", langKey);
+      let tpl =
+        multiFareTpl || loadTemplate(this.selectedTemplateCategory, langKey);
       if (!tpl) return "";
+      // Custom (Gad-authored) categories use his own manual placeholders
+      // ("שם הנוסע", "(LY,XX)", a blank itinerary area, etc.). Run them
+      // through the auto-fill engine so they end up looking like our
+      // standard {{...}} template — the Supabase row stays untouched, this
+      // transformation lives only in the render path. The built-in `flight`
+      // template is already in {{...}} form so skipping autofill for it
+      // saves a regex pass and avoids any accidental double-substitution.
+      if (this.selectedTemplateCategory !== "flight" && !multiFareTpl) {
+        tpl = autofillTemplate(tpl, langKey, this.sectionToggles);
+      }
 
       const customerName = this.capitalizeFirstLetter(
         this.data.travelers[0].name || ""
@@ -825,6 +1067,17 @@ export default {
         langKey
       );
 
+      // The first flight's departure date — used by the intro-line
+      // placeholder Gad writes as "תאריך_יציאה" / "*DATE*" / "*DATE_DEPART*".
+      // We expose it as a GLOBAL placeholder (TRIP_DEPART_DATE), NOT one of
+      // the FLIGHT_* family, so expandFlightBlock doesn't mistakenly tag the
+      // intro paragraph as a per-flight block (the bug that wiped half the
+      // itinerary the first time we tried to wire this up).
+      const firstFlight = parsedFlights[0];
+      const tripDepartDate = firstFlight
+        ? `${firstFlight.departDateNumberOnlyStr} ${this.$t(firstFlight.departMonth)}`
+        : "";
+
       const values = {
         CUSTOMER_NAME: customerName,
         ALL_NAMES: allNames,
@@ -835,6 +1088,7 @@ export default {
         AIRLINE_CODE: airlineCode,
         CLASS: classTxt,
         CLASS_LINE: classLineTxt,
+        TRIP_DEPART_DATE: tripDepartDate,
         PRICE: this.airfareTxt,
         CURRENCY: this.selectedCurrency,
         BAGGAGE: this.baggageList,
@@ -842,6 +1096,20 @@ export default {
         CANCEL_FEE: cancelFee,
         NO_SHOW: this.noShowValue,
         TICKET_ISSUANCE: ticketIssuance,
+        // Traveler icon picked by passenger count parsed from the PNR.
+        // Gad's manual templates listed multiple person/group emojis
+        // separated by "/" so he could keep the relevant one by hand; the
+        // autofill pattern collapses that list to {{TRAVELERS_ICON}} and
+        // we resolve it here based on how many travelers ended up in the
+        // form (which the PNR / name-translation step populates).
+        TRAVELERS_ICON: this.travelersIconFor(this.data.travelers.length),
+        // Possessive "trip" word matched to passenger count for Hebrew
+        // (נסיעתך vs נסיעתכם). English / French render to a single fixed
+        // form so the same placeholder works in every language template.
+        TRAVEL_NOUN: this.travelNounFor(
+          this.data.travelers.length,
+          langKey
+        ),
         FAREWELL: this.$t("farewell")
       };
 
@@ -947,16 +1215,96 @@ export default {
       const fallback = this.$t(classOfTravel || "");
       return fallback ? `*${fallback}*` : "";
     },
-    // Per-flight class label. When the parser couldn't resolve the RBD
-    // letter to a cabin (airline not in AIRLINE_RBD, letter not listed,
-    // charter PNR, or anything else returning null), we fall back to the
-    // original "Economy/Premium/Business Class" placeholder so the line
-    // still reads naturally in the message.
+    // Per-flight class label. Prefixed with the cabin's emoji so the line
+    // reads "👔 מחלקת עסקים" (Business), "💺 מחלקת תיירים" (Economy), etc.
+    // Icons match what `classLineFor` uses for the global {{CLASS_LINE}}
+    // so the visual language stays consistent between the per-flight rows
+    // and the summary "Class of Travel" block.
+    //
+    // When the parser couldn't resolve the RBD letter to a cabin (airline
+    // not in AIRLINE_RBD, letter not listed, charter PNR, or anything else
+    // returning null), we fall back to the original
+    // "Economy/Premium/Business Class" placeholder — no emoji, because
+    // there's no specific cabin to brand it with.
     flightClassDisplay(flightClass) {
-      if (flightClass) return this.$t(flightClass);
+      if (flightClass) {
+        const CLASS_ICONS = {
+          "First Cl.": "🥇",
+          "Business Cl.": "👔",
+          "Premium Eco Cl.": "🥂",
+          "Economy Cl.": "💺"
+        };
+        const label = this.$t(flightClass);
+        const icon = CLASS_ICONS[flightClass];
+        return icon ? `${icon} ${label}` : label;
+      }
       if (this.selectedLang === "he") return "מחלקת תיירים/עסקים/פרמיום";
       if (this.selectedLang === "fr") return "Classe Économique/Premium/Affaires";
       return "Economy/Premium/Business Class";
+    },
+    // Returns the meal-line suffix for a single flight — empty when the
+    // flight has no SSR meal code, "\n🍽️ <localized name> ✅" when it does.
+    // The leading newline lands the meal on a separate line inside the
+    // per-flight block, immediately under the seat-type line.
+    flightMealSuffix(f, lang) {
+      if (!f || !f.meal) return "";
+      const name = getLocalizedMealName(f.meal, lang);
+      if (!name) return "";
+      return "\n🍽️ " + name + " ✅";
+    },
+    // Returns the wheelchair-line suffix for a single flight — empty when
+    // the flight has no SSR WCHR/WCHS/WCHC, "\n👩‍🦽 <label> ✅" when it
+    // does. Plain text (no bold) per Gad's spec; the ✅ alone signals that
+    // assistance is included.
+    flightWheelchairSuffix(f, lang) {
+      if (!f || !f.wheelchair) return "";
+      const labels = {
+        he: "כיסא גלגלים",
+        en: "Wheelchair assistance",
+        fr: "Assistance fauteuil roulant"
+      };
+      const label = labels[lang] || labels.en;
+      return "\n👩‍🦽 " + label + " ✅";
+    },
+    // Returns the single icon representing the passenger group size in the
+    // quote intro line:
+    //   0 / 1 → 👤  (one silhouette)
+    //   2     → 👥  (two silhouettes)
+    //   3+    → 👨‍👩‍👧‍👦  (family ZWJ sequence — agreed group icon)
+    // Driven by the count of travelers the form ended up with, which lines
+    // up with the PNR's passenger list after parseAmadeusNames + the form
+    // is filled. Language-agnostic — same icons everywhere.
+    travelersIconFor(count) {
+      const n = Number(count) || 0;
+      if (n <= 1) return "👤";
+      if (n === 2) return "👥";
+      return "👨‍👩‍👧‍👦";
+    },
+    // Returns the correct possessive form of "trip" for the current
+    // language and passenger count:
+    //   he: 1 → "נסיעתך"  (singular addressee)
+    //       2+ → "נסיעתכם" (plural addressee)
+    //   en: always "your trip" — English doesn't mark grammatical number
+    //       on "you" / "your", so one form covers both cases.
+    //   fr: always "votre voyage" — Gad's templates use the formal
+    //       "votre" everywhere (per Gad's preference), no informal
+    //       "ton voyage" form needed.
+    travelNounFor(count, lang) {
+      const n = Number(count) || 0;
+      if (lang === "he") return n <= 1 ? "נסיעתך" : "נסיעתכם";
+      if (lang === "fr") return "votre voyage";
+      return "your trip";
+    },
+    // Returns the seat-label word ("מושב"/"מושבים" / "Seat"/"Seats" /
+    // "Siège"/"Sièges") matching the current preview language, with plural
+    // form when this flight has 2+ seats. Zero or one seat → singular,
+    // which also covers PNRs that didn't include SSR data.
+    seatLabelFor(seats) {
+      const count = Array.isArray(seats) ? seats.length : 0;
+      const lang = this.selectedLang;
+      if (lang === "he") return count >= 2 ? "מושבים" : "מושב";
+      if (lang === "fr") return count >= 2 ? "Sièges" : "Siège";
+      return count >= 2 ? "Seats" : "Seat";
     },
     renderFlightBlock(blockTpl, f) {
       const isHe = this.selectedLang === "he";
@@ -994,7 +1342,35 @@ export default {
         FLIGHT_ARRIVE_DATE: f.destDateNumberStr || "",
         FLIGHT_ARRIVE_MONTH: this.$t(f.destMonth),
         FLIGHT_ARRIVE_TIME: f.destTime || "",
-        FLIGHT_CLASS: this.flightClassDisplay(f.flightClass)
+        FLIGHT_CLASS: this.flightClassDisplay(f.flightClass),
+        // Comma-separated seat list for this flight; falls back to "XX"
+        // when the PNR didn't include SSR seat lines, so existing
+        // templates with literal "XX" keep their meaning when the
+        // {{FLIGHT_SEATS}} placeholder is used in their place.
+        FLIGHT_SEATS: (f.seats && f.seats.length) ? f.seats.join(", ") : "XX",
+        // Pluralizes the seat label based on how many seats this flight
+        // has. Two or more seats → plural form (מושבים / Seats / Sièges).
+        // Zero or one → singular. The label is plain text — bold marker
+        // (* … *) lives in the surrounding template, not here.
+        FLIGHT_SEAT_LABEL: this.seatLabelFor(f.seats),
+        // Seat-position suffix — "\nליד החלון, באמצע שורה" for an LY flight
+        // with parsed seats, "" for every other case (no SSR data, unmapped
+        // airline like IB / LH). The leading "\n" lands the text on the
+        // line below the seat numbers exactly as Gad asked, and the empty
+        // string for non-LY flights makes the position line disappear
+        // entirely rather than leave a blank row.
+        FLIGHT_SEAT_TYPES: getSeatTypesSuffix(
+          f.seats,
+          flightAirlineCode,
+          this.selectedLang
+        ),
+        // Meal + wheelchair suffixes — both return "" when this flight
+        // doesn't have a matching SSR, so a flight with neither just
+        // renders its seat / seat-type lines unchanged. The leading "\n"
+        // inside the value places each line on its own row directly
+        // beneath the seat-types line.
+        FLIGHT_MEAL: this.flightMealSuffix(f, this.selectedLang),
+        FLIGHT_WHEELCHAIR: this.flightWheelchairSuffix(f, this.selectedLang)
       };
       return blockTpl.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
         map[key] !== undefined ? map[key] : m
@@ -1080,6 +1456,59 @@ export default {
     }
   },
   computed: {
+    // Optional sections to render as a checkbox panel — empty array (panel
+    // hidden) when the currently-selected (lang, category) pair isn't in
+    // SECTION_SUPPORT. The panel reads from this list, so adding sections
+    // is a one-line registry change in templateAutofill.js.
+    availableSections() {
+      const cat = this.selectedTemplateCategory;
+      const lang = this.selectedLang;
+      if (!SECTION_SUPPORT[cat] || !SECTION_SUPPORT[cat][lang]) return [];
+      return OPTIONAL_SECTIONS[lang] || [];
+    },
+    // How many optional sections are currently ON. Shown as a badge in
+    // the accordion header so Gad can tell at a glance how customized the
+    // current quote is without expanding the list.
+    activeSectionsCount() {
+      let n = 0;
+      for (const sec of this.availableSections) {
+        if (this.sectionToggles[sec.key] === true) n++;
+      }
+      return n;
+    },
+    // Layout-ready section list with a synthetic group-header row injected
+    // before each new `group` boundary. The UI just iterates this and
+    // branches on item.type — no `v-for` math in the template, no chance
+    // of group dividers landing in the wrong place when sections are
+    // reordered in OPTIONAL_SECTIONS.
+    groupedSections() {
+      const out = [];
+      let lastGroup = null;
+      for (const sec of this.availableSections) {
+        const group = sec.group || null;
+        if (group !== lastGroup && group) {
+          out.push({ type: "group-header", group });
+        }
+        lastGroup = group;
+        out.push({ type: "item", sec });
+      }
+      return out;
+    },
+    // Built-in `flight` first, then every custom category Gad created in
+    // Admin (label uses the current preview language; custom categories
+    // only carry one label string so we fall back gracefully).
+    categoryOptions() {
+      const lang = this.selectedLang;
+      const builtIn = CATEGORIES.map(c => ({
+        value: c.key,
+        label: (c.label && (c.label[lang] || c.label.en || c.label.he)) || c.key
+      }));
+      const custom = (this.availableCustomCategories || []).map(c => ({
+        value: c.key,
+        label: (c.label && (c.label[lang] || c.label.en || c.label.he)) || c.key
+      }));
+      return [...builtIn, ...custom];
+    },
     translateBtnLabel() {
       switch (this.selectedLang) {
         case "he":
@@ -1223,14 +1652,11 @@ export default {
       }
     },
     advancedOptionsLabel() {
-      switch (this.selectedLang) {
-        case "he":
-          return "פרטים נוספים (אופציונלי)";
-        case "fr":
-          return "Plus d'options (optionnel)";
-        default:
-          return "More options (optional)";
-      }
+      // Always English regardless of preview language — the section options
+      // bar is part of the agent's UI chrome, not the customer-facing text.
+      // Locking it to English keeps the form layout / muscle memory stable
+      // when Gad switches preview language between he / en / fr.
+      return "More options (optional)";
     },
     selectedCurrency() {
       return this.data.prices.currency.currency.selected;
@@ -1465,6 +1891,14 @@ export default {
     selectedLang: {
       handler(lang) {
         this.$i18n.locale = lang;
+        // Restore the picker + section state for this language. Same flow
+        // mounted() uses — keeps each (lang, category) pair independent so
+        // switching languages doesn't bleed Hebrew's toggle choices into EN.
+        this.selectedTemplateCategory = this.loadPickerChoice(lang);
+        this.sectionToggles = this.loadSectionToggles(
+          lang,
+          this.selectedTemplateCategory
+        );
         if (this.tab === 'preview') {
           this.onPreview();
         }
@@ -1473,6 +1907,11 @@ export default {
     },
     tab(newTab) {
       if (newTab === 'preview') {
+        this.onPreview();
+      }
+    },
+    selectedTemplateCategory() {
+      if (this.tab === 'preview') {
         this.onPreview();
       }
     },
@@ -2028,6 +2467,241 @@ body.body--dark .preview-textarea ::v-deep .q-field__native {
   border-radius: 10px;
   padding: 12px;
   font-weight: 600;
+}
+
+.template-picker {
+  margin: 0 0 12px;
+}
+
+// On the preview tab we relax content-area's 640px cap so the toggles
+// panel has room to sit beside the preview card. The card itself stays
+// at 640px wide and centered via the grid below.
+.content-area.preview-tab-area {
+  max-width: 1180px;
+}
+
+// Desktop ≥1100px: 3-column grid keeps the preview-card visually
+// centered (1fr | 640px | 1fr) and drops the section-toggles panel into
+// the right column where there's plenty of empty space.
+// Below 1100px: stack vertically with the toggles strip ABOVE the card.
+.preview-and-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 1100px) {
+  .preview-and-toggles {
+    display: grid;
+    grid-template-columns: minmax(280px, 1fr) minmax(0, 640px) minmax(280px, 1fr);
+    grid-template-areas: "spacer card panel";
+    column-gap: 24px;
+    align-items: start;
+  }
+  .preview-and-toggles > .preview-card {
+    grid-area: card;
+    margin: 0; // card sits centered via the grid, no auto margins needed
+  }
+  .preview-and-toggles > .section-toggles {
+    grid-area: panel;
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+}
+
+.section-toggles {
+  padding: 14px 14px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.04);
+}
+body.body--dark .section-toggles {
+  background: #1e1e1e;
+  border-color: #334155;
+  box-shadow: none;
+}
+
+// Accordion trigger. On desktop CSS below disables the click affordance and
+// hides the chevron so it reads as a plain section title.
+.section-toggles-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0 4px 0;
+  margin: 0 0 4px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: inherit;
+  color: inherit;
+}
+.section-toggles-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  flex: 1;
+  text-align: start;
+}
+body.body--dark .section-toggles-title {
+  color: #94a3b8;
+}
+.section-toggles-badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #22c55e;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.section-toggles-chevron {
+  font-size: 22px;
+  color: #94a3b8;
+  transition: transform 0.2s ease;
+}
+.section-toggles.is-expanded .section-toggles-chevron {
+  transform: rotate(180deg);
+}
+.section-toggles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+// One row = [icon] [label] [checkbox]. Click anywhere toggles the box.
+.section-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  border: 1px solid transparent;
+}
+.section-toggle-row:hover {
+  background: #f8fafc;
+}
+.section-toggle-row.is-on {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+body.body--dark .section-toggle-row:hover {
+  background: #262626;
+}
+body.body--dark .section-toggle-row.is-on {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.section-toggle-icon {
+  font-size: 20px;
+  line-height: 1;
+  width: 26px;
+  flex-shrink: 0;
+  text-align: center;
+}
+.section-toggle-label {
+  flex: 1;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: #1e293b;
+  line-height: 1.35;
+}
+body.body--dark .section-toggle-label {
+  color: #e2e8f0;
+}
+.section-toggle-control {
+  margin: 0;
+  pointer-events: none; // row label handles click → no double event
+}
+
+// Group sub-header for "🟦 תוספות אופציונליות" — a thin separator + label
+// that lives between sibling rows. The 4 sub-section rows that follow are
+// indented via `.is-sub` so the hierarchy reads at a glance.
+.section-toggle-group {
+  margin: 12px 6px 4px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.3px;
+}
+body.body--dark .section-toggle-group {
+  border-top-color: #334155;
+  color: #94a3b8;
+}
+.section-toggle-row.is-sub {
+  // RTL: indent on the right; LTR: indent on the left. `margin-inline-start`
+  // resolves both automatically based on the parent's `dir`.
+  margin-inline-start: 14px;
+}
+.section-toggle-row.is-sub + .section-toggle-row:not(.is-sub) {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+// Mobile (<1100px): collapsible accordion. The same row layout used on
+// desktop — icon + label + checkbox — sits inside a collapsible list whose
+// visibility is driven by the `.is-expanded` flag on the parent. When the
+// list is open we cap its height and let it scroll internally so it never
+// pushes the WhatsApp preview off-screen. `order: -1` pulls the panel
+// above the phone mockup so the accordion header is the first thing the
+// user sees on entering the preview tab.
+@media (max-width: 1099px) {
+  .preview-and-toggles > .section-toggles {
+    order: -1;
+  }
+  .section-toggles {
+    padding: 12px 12px 4px;
+  }
+  .section-toggles-header {
+    padding: 6px 4px;
+    margin: 0;
+  }
+  .section-toggles-title {
+    font-size: 13px;
+  }
+  .section-toggles:not(.is-expanded) .section-toggles-list {
+    display: none;
+  }
+  .section-toggles.is-expanded .section-toggles-list {
+    max-height: 55vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+  }
+}
+
+// Desktop (≥1100px): header is decorative; chevron hidden, click disabled,
+// list always rendered. Keeps the JS state (`sectionsExpanded`) irrelevant
+// on this breakpoint without forcing the user to remember another flag.
+@media (min-width: 1100px) {
+  .section-toggles-header {
+    cursor: default;
+    pointer-events: none;
+  }
+  .section-toggles-chevron {
+    display: none;
+  }
+  .section-toggles-list {
+    display: flex !important;
+  }
 }
 
 .multi-fare-toggle {

@@ -16,7 +16,12 @@ export const FLIGHT_ITEM_KEYS = [
   "FLIGHT_ARRIVE_DATE",
   "FLIGHT_ARRIVE_MONTH",
   "FLIGHT_ARRIVE_TIME",
-  "FLIGHT_CLASS"
+  "FLIGHT_CLASS",
+  "FLIGHT_SEATS",
+  "FLIGHT_SEAT_LABEL",
+  "FLIGHT_SEAT_TYPES",
+  "FLIGHT_MEAL",
+  "FLIGHT_WHEELCHAIR"
 ];
 
 export const PLACEHOLDERS = {
@@ -39,6 +44,11 @@ export const PLACEHOLDERS = {
   FLIGHT_ARRIVE_MONTH: { he: "חודש נחיתה", en: "Arr. month", fr: "Mois arr." },
   FLIGHT_ARRIVE_TIME: { he: "שעת נחיתה", en: "Arr. time", fr: "Heure arr." },
   FLIGHT_CLASS: { he: "מחלקת טיסה", en: "Flight class", fr: "Classe vol" },
+  FLIGHT_SEATS: { he: "מושבים", en: "Seats", fr: "Sièges" },
+  FLIGHT_SEAT_LABEL: { he: "מילת מושב (יחיד/רבים)", en: "Seat word (sg./pl.)", fr: "Mot siège (sg./pl.)" },
+  FLIGHT_SEAT_TYPES: { he: "סוגי מושבים (LY)", en: "Seat types (LY)", fr: "Types de sièges (LY)" },
+  FLIGHT_MEAL: { he: "ארוחה (מ-SSR)", en: "Meal (from SSR)", fr: "Repas (SSR)" },
+  FLIGHT_WHEELCHAIR: { he: "כיסא גלגלים (מ-SSR)", en: "Wheelchair (from SSR)", fr: "Fauteuil roulant (SSR)" },
   FLIGHTS: { he: "פרטי טיסות (בלוק שלם)", en: "Flights (full block)", fr: "Vols (bloc entier)" },
   AIRLINE_NAME: { he: "חברת תעופה", en: "Airline", fr: "Compagnie" },
   AIRLINE_CODE: { he: "קוד חברה", en: "Airline code", fr: "Code compagnie" },
@@ -50,7 +60,9 @@ export const PLACEHOLDERS = {
   CHANGE_FEE: { he: "דמי שינוי", en: "Change fee", fr: "Frais de changement" },
   CANCEL_FEE: { he: "דמי ביטול", en: "Cancel fee", fr: "Frais d'annulation" },
   NO_SHOW: { he: "אי-התייצבות", en: "No show", fr: "No show" },
-  TICKET_ISSUANCE: { he: "מועד הנפקה", en: "Ticket issuance", fr: "Émission du billet" }
+  TICKET_ISSUANCE: { he: "מועד הנפקה", en: "Ticket issuance", fr: "Émission du billet" },
+  TRAVELERS_ICON: { he: "אייקון נוסעים (1/2/3+)", en: "Travelers icon (1/2/3+)", fr: "Icône voyageurs (1/2/3+)" },
+  TRAVEL_NOUN: { he: "נסיעתך / נסיעתכם", en: "your trip", fr: "votre voyage" }
 };
 
 export const CATEGORIES = [
@@ -80,7 +92,7 @@ export const DEFAULT_TEMPLATES = {
 *{{FLIGHT_CLASS}}*
 ממריא {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 נוחת    {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 מושב *XX*
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}
 
 *{{FLIGHT_DIRECTION}}*
 טיסת {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
@@ -88,7 +100,7 @@ export const DEFAULT_TEMPLATES = {
 *{{FLIGHT_CLASS}}*
 ממריא {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 נוחת    {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 מושב *XX*
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}
 
 *חברת התעופה:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
@@ -139,7 +151,7 @@ Please, kindly *reply (from within this WhatsApp message)* with your *tickets is
 *{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 Seat *XX*
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}
 
 *{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
@@ -147,7 +159,7 @@ Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FL
 *{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 Seat *XX*
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}
 
 *Airline:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
@@ -201,7 +213,7 @@ Merci de *répondre (depuis ce message WhatsApp)* avec ta *validation d'émissio
 *{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 Siege *XX*
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}
 
 *{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
@@ -209,7 +221,7 @@ Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLI
 *{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 Siege *XX*
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}
 
 *Compagnie:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
@@ -276,7 +288,7 @@ Please reply directly to this WhatsApp message with:
 *{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 Seat *XX*
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}
 
 *{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
@@ -284,7 +296,7 @@ Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FL
 *{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
-💺 Seat *XX*
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}
 
 *Airline:* ({{AIRLINE_CODE}}) ✈️
 *{{AIRLINE_NAME}}*
@@ -622,6 +634,51 @@ function migrateFlightClassPlaceholder(value) {
   return out;
 }
 
+// Older saved templates baked a literal "*XX*" on the seat line as a hint
+// for the agent to fill in manually. Now that the parser pulls seat numbers
+// from SSR lines, swap the literal XX for {{FLIGHT_SEATS}} so saved templates
+// — including custom categories the user authored — get real seat numbers
+// when the PNR includes SSR data. The {{FLIGHT_SEATS}} renderer still emits
+// "XX" when no SSR data is found, so behaviour is unchanged for PNRs that
+// don't carry seat assignments. Idempotent (the new shape is left alone).
+function migrateSeatPlaceholder(value) {
+  if (typeof value !== "string" || !value) return value;
+  // Three migrations run in sequence, each idempotent on its own and safe
+  // to apply on top of any prior state:
+  //   1. literal "XX" → "{{FLIGHT_SEATS}}" (for templates that predate any
+  //      seat-related work).
+  //   2. drop the hard-coded "מושב"/"Seat"/"Siege" noun in favour of
+  //      "{{FLIGHT_SEAT_LABEL}}" so the word pluralises when 2+ passengers
+  //      have seats.
+  //   3. append "{{FLIGHT_SEAT_TYPES}}" right after the seat-number bold
+  //      block. The renderer turns it into "\n<position>, <position>" only
+  //      for LY flights and an empty string otherwise, so the position
+  //      line surfaces under El Al rows and disappears for everyone else.
+  //      The negative-lookahead in the regex keeps this pass idempotent —
+  //      we never double-append.
+  return value
+    .split("מושב *XX*").join("מושב *{{FLIGHT_SEATS}}*")
+    .split("Seat *XX*").join("Seat *{{FLIGHT_SEATS}}*")
+    .split("Siege *XX*").join("Siege *{{FLIGHT_SEATS}}*")
+    .split("מושב *{{FLIGHT_SEATS}}*").join("{{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*")
+    .split("Seat *{{FLIGHT_SEATS}}*").join("{{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*")
+    .split("Siege *{{FLIGHT_SEATS}}*").join("{{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*")
+    .replace(
+      /\*\{\{FLIGHT_SEATS\}\}\*(?!\{\{FLIGHT_SEAT_TYPES\}\})/g,
+      "*{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}"
+    )
+    // Fourth pass: append {{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}} immediately
+    // after {{FLIGHT_SEAT_TYPES}} when those new per-flight placeholders
+    // aren't already there. Renderer emits "" for flights without SSR
+    // meal/wheelchair codes, so this is invisible on PNRs that don't carry
+    // those preferences. Negative-lookahead keeps the pass idempotent —
+    // running on an already-migrated template doesn't double the markers.
+    .replace(
+      /\{\{FLIGHT_SEAT_TYPES\}\}(?!\{\{FLIGHT_MEAL\}\})/g,
+      "{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}"
+    );
+}
+
 export function loadTemplate(category, lang) {
   try {
     const saved = window.localStorage.getItem(storageKey(category, lang));
@@ -629,7 +686,7 @@ export function loadTemplate(category, lang) {
     // pre-fix structure — we'd rather render the up-to-date default than the
     // broken save. Custom categories are always honoured as-is.
     if (saved !== null && !(category === "flight" && isOutdatedFlightTemplate(saved))) {
-      return migrateFlightClassPlaceholder(saved);
+      return migrateSeatPlaceholder(migrateFlightClassPlaceholder(saved));
     }
   } catch (e) {
     // localStorage unavailable — fall back to default
