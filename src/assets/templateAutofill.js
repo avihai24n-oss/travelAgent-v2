@@ -182,6 +182,25 @@ const PATTERN_MAP = {
     // Destination — "to *DEST*" inside the trip intro line.
     { match: /to \*DEST\*/g, replace: "to *{{DESTINATION}}*" },
 
+    // Travelers icon — same rationale as Hebrew, but here we can't anchor
+    // on prose ("for your … trip" isn't unique enough), so we match the
+    // emoji list directly: 3+ person/group emojis joined by " / ". Catches
+    // 👤 / 👥 / 🧑‍🤝‍🧑 / 👨‍👩‍👧 / 👨‍👩‍👧‍👦 (Gad's typical 5-icon line) and
+    // tolerates ZWJ sequences + skin-tone modifiers without listing them
+    // all. {{TRAVELERS_ICON}} resolves to a single icon at render time.
+    {
+      // Match a list of 3+ pictographic "icons" joined by " / ". Each
+      // icon can be a simple emoji (👤, 🧒) OR a ZWJ sequence like
+      // 🧑‍🧒‍🧒 / 🧑‍🧑‍🧒‍🧒 (adult + child(ren), couple + children, etc.).
+      // \p{Extended_Pictographic} covers any emoji char in Unicode without
+      // us having to enumerate them, so new icons Gad picks (👶, 🧓, …)
+      // are caught automatically. The continuation class is the same set
+      // plus ZWJ (U+200D) and skin-tone modifiers (U+1F3FB–U+1F3FF) so
+      // multi-codepoint sequences stay together.
+      match: /\p{Extended_Pictographic}(?:[‍\u{1F3FB}-\u{1F3FF}\p{Extended_Pictographic}]*)?(?:\s*\/\s*\p{Extended_Pictographic}(?:[‍\u{1F3FB}-\u{1F3FF}\p{Extended_Pictographic}]*)?){2,}/gu,
+      replace: "{{TRAVELERS_ICON}}"
+    },
+
     // Trip departure date — "*DATE*" in the intro line. Uses the GLOBAL
     // {{TRIP_DEPART_DATE}} placeholder (NOT one of the per-flight FLIGHT_*
     // keys) so expandFlightBlock doesn't see this paragraph as a flight
@@ -210,6 +229,23 @@ const PATTERN_MAP = {
     // Destination — "destination de * *," (same empty-bolds shape as the
     // customer name).
     { match: /destination de \* \*,/g, replace: "destination de *{{DESTINATION}}*," },
+
+    // Travelers icon — same generic emoji-list match used for English.
+    // Catches Gad's "👤 / 👥 / 🧑‍🤝‍🧑 / 👨‍👩‍👧 / 👨‍👩‍👧‍👦" sequence regardless of
+    // the surrounding French prose, so we don't need to anchor on
+    // "voyage" / "votre" / "ton" / etc.
+    {
+      // Match a list of 3+ pictographic "icons" joined by " / ". Each
+      // icon can be a simple emoji (👤, 🧒) OR a ZWJ sequence like
+      // 🧑‍🧒‍🧒 / 🧑‍🧑‍🧒‍🧒 (adult + child(ren), couple + children, etc.).
+      // \p{Extended_Pictographic} covers any emoji char in Unicode without
+      // us having to enumerate them, so new icons Gad picks (👶, 🧓, …)
+      // are caught automatically. The continuation class is the same set
+      // plus ZWJ (U+200D) and skin-tone modifiers (U+1F3FB–U+1F3FF) so
+      // multi-codepoint sequences stay together.
+      match: /\p{Extended_Pictographic}(?:[‍\u{1F3FB}-\u{1F3FF}\p{Extended_Pictographic}]*)?(?:\s*\/\s*\p{Extended_Pictographic}(?:[‍\u{1F3FB}-\u{1F3FF}\p{Extended_Pictographic}]*)?){2,}/gu,
+      replace: "{{TRAVELERS_ICON}}"
+    },
 
     // Trip departure date — "*DATE_DEPART*" in the intro line. Uses the
     // GLOBAL {{TRIP_DEPART_DATE}} placeholder (NOT one of the per-flight
