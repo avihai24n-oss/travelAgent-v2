@@ -7,6 +7,7 @@ import {
   airlineCodeFromFlightNumber
 } from "src/assets/airlineNames.js";
 import { resolveFlightClass } from "src/assets/airlineRbd.js";
+import { MEAL_CODES } from "src/assets/mealCodes.js";
 
 // IATA codes that aren't in the airportsjs npm dataset (e.g. railway-station
 // codes used by airline PNRs like QKL = Köln Hbf) fall back to the local
@@ -200,6 +201,99 @@ const messageMixin = {
         return txt;
       } else return "";
     },
+    /* Parses SSR (Special Service Request) seat lines from the raw PNR.
+     *
+     * Example lines:
+     *   17 /SSR RQST LY HK2 TLVJFK/24DN,P1/24FN,P2/S3
+     *    18 SSR RQST LY HK2 JFKLAS/30BN,P1/30CN,P2/S4
+     *
+     * Returns { "<segmentNumber>": { "<paxNum>": "<seat>" } }
+     * e.g.    { "3": { "1": "24D", "2": "24F" }, "4": { ... } }
+     *
+     * Returns {} for PNRs without SSR lines — caller treats that as "no
+     * seat data available" and leaves the per-flight seat list empty.
+     * Accepts both SSR RQST and SSR SEAT variants (request vs. confirmed).
+     */
+    parseSeatAssignments(rawPnr) {
+      if (!rawPnr) return {};
+      const result = {};
+      const lines = String(rawPnr).split("\n");
+      for (const rawLine of lines) {
+        if (!/SSR\s+(RQST|SEAT|NSST)/i.test(rawLine)) continue;
+        const segMatch = rawLine.match(/\/S(\d+)/);
+        if (!segMatch) continue;
+        const segNum = segMatch[1];
+        // Each seat-passenger pair looks like /24DN,P1 — row+letter,
+        // optional status letter (N/K/HK), then ,P<num>.
+        const pairRe = /\/(\d+[A-Z])[A-Z]?,P(\d+)/g;
+        let m;
+        const seats = {};
+        while ((m = pairRe.exec(rawLine)) !== null) {
+          seats[m[2]] = m[1];
+        }
+        if (Object.keys(seats).length) {
+          result[segNum] = seats;
+        }
+      }
+      return result;
+    },
+    /* Scans SSR lines for meal codes (SKML / KSML / VGML / etc.) and
+     * returns { "<segmentNumber>": "<MEAL_CODE>" }.
+     *
+     * Format examples:
+     *   SSR SKML LY HK1/S2
+     *   SSR KSML AF HK2/S4
+     *
+     * A code is accepted only if it both ends in "ML" and is registered in
+     * MEAL_CODES, which keeps the parser from picking up unrelated SSR
+     * categories that happen to follow the same shape (e.g. CHLD/INFT).
+     *
+     * Returns {} for PNRs that don't carry meal SSRs — caller treats that
+     * as "no meal info" and leaves the template default in place.
+     */
+    parseMealAssignments(rawPnr) {
+      if (!rawPnr) return {};
+      const result = {};
+      const lines = String(rawPnr).split("\n");
+      for (const rawLine of lines) {
+        // Match: SSR <CODE> <airline> ... /S<num>
+        // The 4-letter code captures right after SSR; if it isn't a known
+        // meal code we just skip the line.
+        const m = rawLine.match(/SSR\s+([A-Z]{4})\b[\s\S]*?\/S(\d+)/);
+        if (!m) continue;
+        const code = m[1];
+        if (!/ML$/.test(code)) continue;
+        if (!Object.prototype.hasOwnProperty.call(MEAL_CODES, code)) continue;
+        const segNum = m[2];
+        // First occurrence per segment wins — Amadeus shouldn't double up
+        // but we'd rather not lose the original if it does.
+        if (!(segNum in result)) result[segNum] = code;
+      }
+      return result;
+    },
+    /* Scans SSR lines for wheelchair codes (WCHR / WCHS / WCHC) and
+     * returns a Set of segment numbers that have a wheelchair request.
+     *
+     * Format example:
+     *   SSR WCHR LY HK1/S2
+     *
+     * The three WCHR variants represent different mobility needs but for
+     * the agent-facing preview we collapse them to a single "included"
+     * flag — Gad edits the exact wording downstream if a specific tier
+     * matters for a quote.
+     */
+    parseWheelchairAssignments(rawPnr) {
+      if (!rawPnr) return new Set();
+      const result = new Set();
+      const lines = String(rawPnr).split("\n");
+      for (const rawLine of lines) {
+        if (!/SSR\s+WCH[RSC]\b/.test(rawLine)) continue;
+        const segMatch = rawLine.match(/\/S(\d+)/);
+        if (!segMatch) continue;
+        result.add(segMatch[1]);
+      }
+      return result;
+    },
     getParsedFlights() {
       const raw = this.data.smartAmadeusCode || "";
       if (!raw) return [];
@@ -212,6 +306,29 @@ const messageMixin = {
         if (f) flights.push(f);
       }
       if (!flights.length) return [];
+
+      // Attach seat assignments (if SSR lines were included). For PNRs
+      // without SSR lines this is a no-op — every flight gets seats: [].
+      const seatsByMatch = this.parseSeatAssignments(raw);
+      // Meal and wheelchair SSRs are parsed alongside seats so a single PNR
+      // pass surfaces every preference. Flights without an entry get null /
+      // false respectively — the downstream renderer treats those as "no
+      // preference, leave the template default in place".
+      const mealsByMatch = this.parseMealAssignments(raw);
+      const wheelchairSegments = this.parseWheelchairAssignments(raw);
+      for (const f of flights) {
+        const segSeats = seatsByMatch[f.segmentNumber];
+        if (segSeats) {
+          const paxNums = Object.keys(segSeats)
+            .map(n => parseInt(n, 10))
+            .sort((a, b) => a - b);
+          f.seats = paxNums.map(p => segSeats[String(p)]);
+        } else {
+          f.seats = [];
+        }
+        f.meal = mealsByMatch[f.segmentNumber] || null;
+        f.wheelchair = wheelchairSegments.has(f.segmentNumber);
+      }
 
       const outboundLbl = this.$t("outbound flight");
       const inboundLbl = this.$t("inbound flight");
@@ -285,6 +402,10 @@ const messageMixin = {
           item => item.IATA === splitedLine[1]
         )[0];
         if (!airlineEntry) return null;
+        // Segment number is the first token on the line ("3" in
+        // "  3  LY 003 L ..."). Used later to match SSR seat lines that
+        // reference flights as /S3, /S4, etc.
+        line.segmentNumber = splitedLine[0];
         line.airline = airlineEntry.name;
         line.flightNumber = `${splitedLine[1]}${splitedLine[2]}`;
         line.departAirportCode = splitedLine[6].slice(0, 3);
@@ -356,6 +477,7 @@ const messageMixin = {
       );
       const airlineEntry = airlines.filter(item => item.IATA === splitedLine[1])[0];
       if (!airlineEntry) return;
+      line.segmentNumber = splitedLine[0];
       line.airline = airlineEntry.name;
       line.flightNumber = `${splitedLine[1]}${splitedLine[2]}`;
       dayNumber = splitedLine[5];
