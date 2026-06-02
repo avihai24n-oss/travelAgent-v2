@@ -149,7 +149,7 @@ const PATTERN_MAP = {
     // pattern can still replace it.
     {
       match: /(נסיעתך\/כם)[^\n]*?(?=\s+הקרובה)/g,
-      replace: "$1 {{TRAVELERS_ICON}}"
+      replace: "$1 {{TRAVELERS_ICON}} {{TRAVELER_FIRST_NAMES}}"
     },
 
     // "נסיעתך/כם" → "{{TRAVEL_NOUN}}". Gad spells out both grammatical
@@ -157,7 +157,36 @@ const PATTERN_MAP = {
     // picks "נסיעתך" (1 passenger) or "נסיעתכם" (2+) based on the parsed
     // PNR. Runs AFTER the icon pattern above, which intentionally leaves
     // the literal in place ($1) for this swap to find.
-    { match: /נסיעתך\/כם/g, replace: "{{TRAVEL_NOUN}}" }
+    { match: /נסיעתך\/כם/g, replace: "{{TRAVEL_NOUN}}" },
+
+    // Ticket-issuance instruction — Gad spells out all three grammatical
+    // forms in parens ("כרטיסך (/ הכרטיס / _ כרטיסכם תוך ציון התעריף …)")
+    // so he can hand-pick one. {{TICKET_NOUN}} resolves to the right form
+    // (singular vs plural) for the passenger count, always with the fare
+    // clause attached. Tolerates optional whitespace inside the parens.
+    {
+      match: /כרטיסך\s*\([^)]*\)/g,
+      replace: "{{TICKET_NOUN}}"
+    },
+
+    // Secondary confirm-issuance line near the bottom — "נא השב … להנפקת
+    // כרטיסך/סיכם …". Gad uses three shorthands for the plural form:
+    // the full "כרטיסכם", the suffix-only "כם", and his abbreviated
+    // "סיכם". {{TICKET_WORD}} resolves to "כרטיסך" (1) or "כרטיסכם" (2+).
+    // The "מתוך הסכמה למסלול … כפי שפורטו מעלה" tail stays intact (per
+    // Gad's spec).
+    {
+      match: /כרטיסך\/(?:סיכם|כרטיסכם|כם)/g,
+      replace: "{{TICKET_WORD}}"
+    },
+
+    // Typo fix — Gad spelled "המידי" with one yod in his Supabase
+    // template; the correct Hebrew form is "המיידי" (two yods). The
+    // single-yod form isn't a real word with the heh prefix, so a global
+    // replace is safe and won't touch the unrelated "מידי" ("from time
+    // to time") that's typed without the prefix. Render-time only — the
+    // Supabase row stays exactly as Gad authored it.
+    { match: /המידי/g, replace: "המיידי" }
   ],
   en: [
     // Older generic English templates used `*Xxxxxxx*` / `*Day .. | ..*` as
@@ -198,7 +227,7 @@ const PATTERN_MAP = {
       // plus ZWJ (U+200D) and skin-tone modifiers (U+1F3FB–U+1F3FF) so
       // multi-codepoint sequences stay together.
       match: /\p{Extended_Pictographic}(?:[‍\u{1F3FB}-\u{1F3FF}\p{Extended_Pictographic}]*)?(?:\s*\/\s*\p{Extended_Pictographic}(?:[‍\u{1F3FB}-\u{1F3FF}\p{Extended_Pictographic}]*)?){2,}/gu,
-      replace: "{{TRAVELERS_ICON}}"
+      replace: "{{TRAVELERS_ICON}} {{TRAVELER_FIRST_NAMES}}"
     },
 
     // Trip departure date — "*DATE*" in the intro line. Uses the GLOBAL
@@ -209,7 +238,30 @@ const PATTERN_MAP = {
 
     // Airline-code legend "(LY, XX)" → "({{AIRLINE_CODE}})". Allow optional
     // whitespace after the comma so a single-airline edit still matches.
-    { match: /\(LY,\s*XX\)/g, replace: "({{AIRLINE_CODE}})" }
+    { match: /\(LY,\s*XX\)/g, replace: "({{AIRLINE_CODE}})" },
+
+    // Ticket-issuance instruction — Gad writes the "(s)" plural marker
+    // and pre-bakes the fare clause. {{TICKET_NOUN}} resolves to the
+    // right form ("your ticket, specifying the chosen fare for you" /
+    // "your tickets, specifying the chosen fare for each") based on the
+    // PNR passenger count. Tolerant of single vs double spacing inside
+    // the bracketed bits.
+    {
+      match: /your ticket\(s\),\s*specifying the chosen fare for each/g,
+      replace: "{{TICKET_NOUN}}"
+    },
+
+    // Secondary confirm-issuance line near the bottom of the template
+    // — "...to issue your ticket(s)..." without the fare clause. The
+    // primary pattern above already swallowed its instance because of
+    // the ", specifying..." suffix, so any "your ticket(s)" left when
+    // this rule runs is the bottom-of-template occurrence.
+    // {{TICKET_WORD}} resolves to "your ticket" (1 pax) /
+    // "your tickets" (2+).
+    {
+      match: /your ticket\(s\)/g,
+      replace: "{{TICKET_WORD}}"
+    }
   ],
   fr: [
     // Gad's Standard Airfare Quote (fr) — patterns aligned to his exact
@@ -244,7 +296,7 @@ const PATTERN_MAP = {
       // plus ZWJ (U+200D) and skin-tone modifiers (U+1F3FB–U+1F3FF) so
       // multi-codepoint sequences stay together.
       match: /\p{Extended_Pictographic}(?:[‍\u{1F3FB}-\u{1F3FF}\p{Extended_Pictographic}]*)?(?:\s*\/\s*\p{Extended_Pictographic}(?:[‍\u{1F3FB}-\u{1F3FF}\p{Extended_Pictographic}]*)?){2,}/gu,
-      replace: "{{TRAVELERS_ICON}}"
+      replace: "{{TRAVELERS_ICON}} {{TRAVELER_FIRST_NAMES}}"
     },
 
     // Trip departure date — "*DATE_DEPART*" in the intro line. Uses the
@@ -256,6 +308,29 @@ const PATTERN_MAP = {
     // Airline-code legend "(LY, XX)" → "({{AIRLINE_CODE}})". Allow
     // optional whitespace after the comma.
     { match: /\(LY,\s*XX\)/g, replace: "({{AIRLINE_CODE}})" },
+
+    // Ticket-issuance instruction — Gad's "votre/vos billet(s),
+    // en précisant le tarif choisi pour …" line. {{TICKET_NOUN}}
+    // resolves to "votre billet, en précisant le tarif choisi pour vous"
+    // (1 pax) or "vos billets, en précisant le tarif choisi pour chacun
+    // des passagers" (2+). The trailing prose Gad attaches after "pour"
+    // (e.g. "chacun" / "chaque passager") gets swallowed too so the
+    // rendered line has exactly one canonical phrasing.
+    {
+      match: /votre\/vos billet\(s\),\s*en précisant le tarif choisi pour[^,\n]*/g,
+      replace: "{{TICKET_NOUN}}"
+    },
+
+    // Secondary confirm-issuance line near the bottom of the template
+    // — "votre/vos billet(s)" without the fare clause. The primary
+    // pattern above has already been replaced with {{TICKET_NOUN}}
+    // thanks to its ", en précisant..." suffix, so the remaining hit
+    // is the bottom occurrence. {{TICKET_WORD}} resolves to
+    // "votre billet" (1 pax) / "vos billets" (2+).
+    {
+      match: /votre\/vos billet\(s\)/g,
+      replace: "{{TICKET_WORD}}"
+    },
 
     // ─── Drop draft duplicates of the closing paragraph ───
     // Gad left three "🇫🇷 ✅ …" lines in the FR template that don't have
@@ -289,6 +364,16 @@ const PATTERN_MAP = {
 //      surrounding whitespace — just make sure no stray content leaks.
 export const OPTIONAL_SECTIONS = {
   he: [
+    {
+      // Visa-requirements (injection-style — no `pattern`). Pinned to
+      // the top of the list because it's the highest-visibility section
+      // Gad reaches for first; the rest of the toggles follow.
+      // The actual block is computed and injected by MessageBuilder.vue
+      // based on the parsed PNR + toggle state.
+      key: "visa_requirements",
+      icon: "🛂",
+      label: "דרישות ויזה (לפי יעדים)"
+    },
     // ─── העדפות פר־טיסה — 3 תת־סקציות ───
     // Splits Gad's seat/meal/wheelchair block into independent toggles.
     // Patterns are sized so each can be removed in isolation; the cleanup
@@ -402,6 +487,13 @@ export const OPTIONAL_SECTIONS = {
   // on when he switches preview language to en — same `sectionTogglesKey`
   // shape, same UX. Patterns are translated against Gad's exact phrasing.
   en: [
+    {
+      // Visa-requirements pinned to the top — see HE comment above for
+      // the full architecture rationale.
+      key: "visa_requirements",
+      icon: "🛂",
+      label: "Visa requirements (by destination)"
+    },
     // ─── group: preferences — per-flight passenger preferences ───
     {
       key: "pref_seat",
@@ -514,6 +606,13 @@ export const OPTIONAL_SECTIONS = {
   // intentionally OMITTED — Gad's French template has only the base fare
   // conditions block, no second-tier (+72h/-72h or USA-style) variant.
   fr: [
+    {
+      // Visa-requirements pinned to the top — see HE comment above for
+      // the full architecture rationale.
+      key: "visa_requirements",
+      icon: "🛂",
+      label: "Exigences de visa (par destination)"
+    },
     // ─── group: preferences ───
     {
       key: "pref_seat",
@@ -668,9 +767,14 @@ export function autofillTemplate(tpl, lang, toggles) {
   // 1. Strip optional sections that are OFF. Done BEFORE injection /
   //    pattern replacement so the section patterns can rely on the original
   //    shape of the template (Gad's literal text and dividers).
+  //
+  //    Entries WITHOUT a `pattern` (e.g. visa_requirements — an injection-
+  //    style toggle that adds content rather than stripping) are skipped
+  //    here; their effect is applied later in the consumer pipeline.
   const sections = OPTIONAL_SECTIONS[langKey] || [];
   const onMap = toggles || {};
   for (const sec of sections) {
+    if (!sec.pattern) continue;
     if (onMap[sec.key] === true) continue;
     out = out.replace(sec.pattern, "");
   }

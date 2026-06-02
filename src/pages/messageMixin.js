@@ -443,6 +443,15 @@ const messageMixin = {
           splitedLine[1],
           latterOfclassOfTravel
         );
+        // Status + pax count — Amadeus segments end the city pair with a
+        // status code like "HK1" (Holding Confirmed, 1 pax), "HK2",
+        // "HL3" (waitlisted), "UN1" (unable), etc. We only treat HK as a
+        // confirmed pax count; other statuses leave paxCount at 0 so the
+        // caller falls back to whatever default makes sense (typed
+        // names → manual input → 1).
+        const statusToken = splitedLine[7] || "";
+        const hkMatch = /^HK(\d+)$/.exec(statusToken);
+        line.paxCount = hkMatch ? parseInt(hkMatch[1], 10) : 0;
         if (line.departMonth === line.destMonth) {
           line.destDay =
             line.departDateNumberOnly !== line.destDateNumberOnly

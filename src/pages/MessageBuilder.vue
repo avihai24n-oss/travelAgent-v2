@@ -583,6 +583,8 @@ import {
   OPTIONAL_SECTIONS,
   SECTION_SUPPORT
 } from "src/assets/templateAutofill.js";
+import { resolveVisaForFlights } from "src/assets/visaRequirements.js";
+import { getCountryCode } from "src/assets/airportCountry.js";
 import { flagFromCountry } from "src/assets/countryFlag.js";
 import {
   getLocalizedAirlineName,
@@ -738,13 +740,24 @@ export default {
           timeout: 2500
         });
       } catch (err) {
+        // Translation failed (proxy down, OpenAI missing, network error, …).
+        // Fall back to the original Latin-script names from the PNR so the
+        // flow doesn't dead-end on a transient backend hiccup.
+        // buildTravelersFromNames with an empty array uses `${firstName}
+        // ${surname}` as the fallback per traveler, exactly what we want.
+        const fallbackTravelers = buildTravelersFromNames(parsedNames, []);
+        this.data.travelers = fallbackTravelers;
+        this.lastTranslatedNames = fallbackTravelers.map(t => t.name);
+        this.destinationPickerOpen = false;
+        this.tab = "preview";
+        this.onPreview();
         const msg =
           err && err.message === "missing_proxy_config"
             ? this.missingApiKeyMsg
             : this.translationFailedMsg;
         this.lastTranslationInfo = msg;
-        this.$q.notify({ type: "negative", message: msg, timeout: 4000 });
-        console.error("translate names error:", err);
+        this.$q.notify({ type: "warning", message: msg, timeout: 3000 });
+        console.warn("translate names failed, using original names:", err);
       } finally {
         this.isTranslatingNames = false;
       }
@@ -780,13 +793,19 @@ export default {
           timeout: 2500
         });
       } catch (err) {
+        // Same fallback as onConfirmDestination — keep the original PNR
+        // names so the agent isn't blocked on a transient backend hiccup.
+        const fallbackTravelers = buildTravelersFromNames(parsed, []);
+        this.data.travelers = fallbackTravelers;
+        this.lastTranslatedNames = fallbackTravelers.map(t => t.name);
+        this.onPreview();
         const msg =
           err && err.message === "missing_proxy_config"
             ? this.missingApiKeyMsg
             : this.translationFailedMsg;
         this.lastTranslationInfo = msg;
-        this.$q.notify({ type: "negative", message: msg, timeout: 4000 });
-        console.error("translate names error:", err);
+        this.$q.notify({ type: "warning", message: msg, timeout: 3000 });
+        console.warn("translate names failed, using original names:", err);
       } finally {
         this.isTranslatingNames = false;
       }
@@ -1067,6 +1086,25 @@ export default {
         langKey
       );
 
+      // Pax count for every render-time pluralization decision below.
+      // Prefers the form (typed/translated names); when the form is at
+      // its default empty state, falls back to the HK<N> token in the
+      // first PNR segment so a "HK2"-only PNR still renders plural copy.
+      const paxCount = this.getEffectivePaxCount(parsedFlights);
+
+      // Pax categories — scans the Amadeus text for "(CHD" / "(INF"
+      // markers so the price block can append per-category rows
+      // (child / infant) alongside the adult row. Adults are derived
+      // from paxCount minus children (infants don't take a seat and
+      // aren't counted in HK).
+      const paxCategories = this.parsePaxCategories(
+        this.data.smartAmadeusCode || ""
+      );
+      const adultCount = Math.max(
+        paxCount - paxCategories.children,
+        1
+      );
+
       // The first flight's departure date — used by the intro-line
       // placeholder Gad writes as "תאריך_יציאה" / "*DATE*" / "*DATE_DEPART*".
       // We expose it as a GLOBAL placeholder (TRIP_DEPART_DATE), NOT one of
@@ -1102,22 +1140,158 @@ export default {
         // autofill pattern collapses that list to {{TRAVELERS_ICON}} and
         // we resolve it here based on how many travelers ended up in the
         // form (which the PNR / name-translation step populates).
-        TRAVELERS_ICON: this.travelersIconFor(this.data.travelers.length),
+        TRAVELERS_ICON: this.travelersIconFor(paxCount),
+        // First names of every traveler, comma-separated, in the same
+        // language as the rest of the message. Sits immediately after the
+        // TRAVELERS_ICON in the intro line so the customer sees a quick
+        // roll-call ("...נסיעתכם 👨‍👩‍👧‍👦 משה, רחל, יוסי, שרה"). Empty when
+        // we have no parsed travelers — the autofill engine then leaves a
+        // single trailing space after the icon, which WhatsApp collapses.
+        TRAVELER_FIRST_NAMES: this.travelerFirstNames(),
         // Possessive "trip" word matched to passenger count for Hebrew
         // (נסיעתך vs נסיעתכם). English / French render to a single fixed
         // form so the same placeholder works in every language template.
-        TRAVEL_NOUN: this.travelNounFor(
-          this.data.travelers.length,
-          langKey
-        ),
+        TRAVEL_NOUN: this.travelNounFor(paxCount, langKey),
+        // Ticket-issuance phrase + embedded fare clause, matched to the
+        // current language and passenger count. Renders as a single
+        // chunk that drops into Gad's confirm-issuance line, so a
+        // 1-passenger quote reads "...your ticket, specifying the chosen
+        // fare for you..." and a 3-passenger quote reads "...your
+        // tickets, specifying the chosen fare for each..." without the
+        // agent editing anything by hand.
+        TICKET_NOUN: this.ticketNounFor(paxCount, langKey),
+        // "Ticket" noun on its own (no fare clause) for Gad's secondary
+        // confirm-issuance line near the bottom of the template — "נא השב
+        // … להנפקת כרטיסך/סיכם …". Same singular/plural rules as
+        // TICKET_NOUN; the fare clause is omitted because that sentence
+        // already contains the rest of its own context.
+        TICKET_WORD: this.ticketWordFor(paxCount, langKey),
         FAREWELL: this.$t("farewell")
       };
 
       const withFlights = this.expandFlightBlock(tpl);
 
-      return withFlights.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
+      const rendered = withFlights.replace(/\{\{([A-Z_]+)\}\}/g, (m, key) =>
         values[key] !== undefined ? values[key] : m
       );
+
+      // Substitute the price rows of the price-details block with the
+      // quote price Gad typed in the Amadeus input ("2000USD" /
+      // "2000NIS" / etc.). Runs BEFORE pluralization so the per-pax
+      // anchor (" לנוסע" / " per passenger" / " par passager") is
+      // still in place for the singular-pax stripping pass to find.
+      // No-op when Gad didn't type a price token — the template's
+      // "000" placeholder is left untouched. Adult count is used for
+      // the per-adult fare math; child / infant rows below carry
+      // their own "000" placeholders pending the upcoming per-cat
+      // price UI.
+      const priced = this.applyPriceFromPnr(rendered, adultCount);
+
+      // Inject child- and infant-pricing rows after the adult block
+      // when the PNR carries "(CHD" / "(INF" markers. Each row is
+      // gated on its own category count (no row when zero, multi row
+      // added when ≥ 2). No-op for adult-only bookings.
+      const withCategories = this.applyCategoryRows(priced, paxCategories);
+
+      // Apply singular/plural rules to the price-details +
+      // ticket-conditions blocks near the bottom of Gad's Standard
+      // Airfare Quote. Adult-row rules react to ADULT count; ticket
+      // noun rules ("/ים" / "(s)" / article pairs) react to TOTAL
+      // ticket count.
+      const pluralized = this.applyPluralization(
+        withCategories,
+        adultCount,
+        paxCount
+      );
+
+      // Inject the visa-requirements block right before the signature when
+      // the toggle is on. Done AFTER value substitution so the block can
+      // splice into the final message (the rest of the engine is
+      // strip-based; this one is the opposite).
+      return this.injectVisaBlock(pluralized, parsedFlights, langKey);
+    },
+    // Builds the "🛂 מסמכי כניסה נדרשים" block from the parsed PNR.
+    // Returns empty string when the toggle is off or no destination on the
+    // trip requires anything (in which case the caller skips injection).
+    computeVisaBlock(flights, langKey) {
+      if (!this.sectionToggles || this.sectionToggles.visa_requirements !== true) return "";
+      if (!Array.isArray(flights) || !flights.length) return "";
+
+      // Hours from this flight's arrival to the next flight's departure.
+      // The last leg returns Infinity (no "next flight"), which the
+      // resolver treats as a real stay (above the short-transit threshold).
+      const hoursAtStop = (i) => {
+        const cur = flights[i];
+        const next = flights[i + 1];
+        if (!next) return Infinity;
+        const diff = this.getHourDifference(cur, next);
+        // getHourDifference returns negative when the months wrap awkwardly;
+        // treat any non-positive value as "long enough to count as a stay".
+        return diff > 0 ? diff : Infinity;
+      };
+
+      const entries = resolveVisaForFlights(
+        flights,
+        langKey,
+        getCountryCode,
+        hoursAtStop
+      );
+      if (!entries.length) return "";
+
+      // Alias the parameter so the per-language lookups below read more
+      // naturally — `lang` was the original variable name and got dropped
+      // during a refactor, leaving an undefined-variable ReferenceError
+      // that bubbled up to the renderer and produced an empty preview
+      // any time the visa toggle was on.
+      const lang = langKey;
+      const headers = {
+        he: "🛂 *מסמכי כניסה נדרשים*",
+        en: "🛂 *Entry Documents Required*",
+        fr: "🛂 *Documents d'entrée requis*"
+      };
+      const verifyTag = {
+        he: "⚠️ לבדיקה",
+        en: "⚠️ Verify",
+        fr: "⚠️ À vérifier"
+      };
+      // RTL-aware arrow: WhatsApp's bidi puts the URL (LTR run) on the
+      // visual LEFT of the line in Hebrew, so the arrow visually ends up
+      // on the right. Switching to 👈 makes it point toward the URL.
+      // English/French keep the right-pointing 👉.
+      const urlArrow = lang === "he" ? "👈" : "👉";
+      const lines = [headers[lang] || headers.he, ""];
+      for (const e of entries) {
+        const { country, status } = e;
+        const flag = country.flag;
+        const name = (country.name && (country.name[lang] || country.name.he)) || e.code;
+        const title = (country.title && (country.title[lang] || country.title.he)) || "";
+        const desc = (country.description && (country.description[lang] || country.description.he)) || "";
+        const head = status === "VERIFY"
+          ? `${flag} *${name}* - ${verifyTag[lang] || verifyTag.he}`
+          : `${flag} *${name}* - ${title}`;
+        lines.push(head);
+        if (desc) lines.push(desc);
+        if (country.url) lines.push(`${urlArrow} ${country.url}`);
+        lines.push("");
+      }
+      // Trim a trailing blank, return.
+      while (lines.length && lines[lines.length - 1] === "") lines.pop();
+      return lines.join("\n");
+    },
+    // Splices the visa block into the rendered message right before the
+    // signature ("תודה רבה,"/"Thank you very much"/"Merci beaucoup,").
+    // No-op when the block is empty or the signature anchor isn't found.
+    injectVisaBlock(text, flights, langKey) {
+      const block = this.computeVisaBlock(flights, langKey);
+      if (!block) return text;
+      const anchors = {
+        he: /(\n+)(תודה רבה,)/u,
+        en: /(\n+)(Thank you very much)/u,
+        fr: /(\n+)(Merci beaucoup,)/u
+      };
+      const re = anchors[langKey] || anchors.he;
+      if (!re.test(text)) return text;
+      return text.replace(re, `\n\n${block}\n\n$2`);
     },
     expandFlightBlock(tpl) {
       const hasPerFlightKey = FLIGHT_ITEM_KEYS.some(k =>
@@ -1280,6 +1454,32 @@ export default {
       if (n === 2) return "👥";
       return "👨‍👩‍👧‍👦";
     },
+    // Returns the part of a full name before the first whitespace, i.e.
+    // the first name. Handles edge cases:
+    //   - empty / falsy input → ""
+    //   - single-word name (no space) → the whole name
+    //   - leading whitespace → trimmed first, then split
+    // Used to extract the addressable first name from a traveler's
+    // possibly-translated "First Last" string for the intro line.
+    firstNameOf(fullName) {
+      const trimmed = String(fullName || "").trim();
+      if (!trimmed) return "";
+      const spaceIdx = trimmed.indexOf(" ");
+      return spaceIdx === -1 ? trimmed : trimmed.slice(0, spaceIdx);
+    },
+    // Comma-separated first names for every traveler in `this.data.travelers`,
+    // in the same language as the rest of the message (the name field has
+    // already been translated by translateNamesViaProxy or fallen back to
+    // the original PNR names on API failure). Empty travelers and travelers
+    // with empty names are filtered out so a stray blank row in the form
+    // doesn't produce a dangling ", ".
+    travelerFirstNames() {
+      const travelers = Array.isArray(this.data.travelers) ? this.data.travelers : [];
+      return travelers
+        .map(t => this.firstNameOf(t && t.name))
+        .filter(Boolean)
+        .join(", ");
+    },
     // Returns the correct possessive form of "trip" for the current
     // language and passenger count:
     //   he: 1 → "נסיעתך"  (singular addressee)
@@ -1294,6 +1494,471 @@ export default {
       if (lang === "he") return n <= 1 ? "נסיעתך" : "נסיעתכם";
       if (lang === "fr") return "votre voyage";
       return "your trip";
+    },
+    // Returns just the singular/plural "ticket" word — no fare clause.
+    // Used by the secondary confirm-issuance sentence Gad has near the
+    // bottom of his template ("נא השב … להנפקת כרטיסך/סיכם …"). HE only
+    // for now — Gad's en/fr templates don't carry the equivalent sentence
+    // structure (or they do but we haven't seen it yet), so they fall
+    // back to a fixed form that won't break if the placeholder is unused.
+    ticketWordFor(count, lang) {
+      const isSingular = (Number(count) || 0) <= 1;
+      if (lang === "he") return isSingular ? "כרטיסך" : "כרטיסכם";
+      if (lang === "fr") return isSingular ? "votre billet" : "vos billets";
+      return isSingular ? "your ticket" : "your tickets";
+    },
+    // Resolves the pax count to use for singular/plural decisions and
+    // per-pax icon rendering. Prefers what's in the form (typed names,
+    // or a multi-row travelers array) because that's a positive signal
+    // the agent already curated the list. Falls back to the HK<N>
+    // count from the first PNR flight segment when the form is still
+    // at its default "1 empty row" state — covers the common case
+    // where Gad pastes a PNR with only flight segments and no name
+    // section ("HK2" / "HK3" in the segment line is the booking's
+    // real pax count).
+    getEffectivePaxCount(parsedFlights) {
+      const list = this.data.travelers || [];
+      const hasRealName = list.some(
+        t => t && String(t.name || "").trim()
+      );
+      if (hasRealName || list.length > 1) return list.length;
+      const first = parsedFlights && parsedFlights[0];
+      if (first && first.paxCount > 0) return first.paxCount;
+      return list.length || 1;
+    },
+    // Pax-category detector. Scans the raw Amadeus text for the
+    // standard markers Amadeus emits next to a name when the booking
+    // includes a child or an infant:
+    //   - "(CHD/..." — the passenger on that line IS a child (its own
+    //     seat, separate ticket, child fare).
+    //   - "(INF/..." — that adult is travelling with a lap infant (no
+    //     seat of its own, listed as an SSR attached to the parent).
+    // Returns counts so the price block can append a per-category row
+    // for each present category. Case insensitive on the marker so
+    // ad-hoc lowercase Gad sometimes types still gets picked up.
+    parsePaxCategories(rawPnr) {
+      const text = String(rawPnr || "");
+      const children = (text.match(/\(CHD\b/gi) || []).length;
+      const infants = (text.match(/\(INF\b/gi) || []).length;
+      return { children, infants };
+    },
+    // Builds a single child- or infant-pricing row matching Gad's
+    // existing adult-row formatting per language. ALWAYS emits the
+    // category qualifier (" לילד" / " per child" / " par enfant", and
+    // the same shape for infants) — unlike the adult per-pax row
+    // (which can safely drop " לנוסע" when there's only one adult
+    // because the row's identity is then clear from context),
+    // child/infant rows must keep the qualifier so 1 child + 1
+    // infant don't render as two indistinguishable "000 דולר**"
+    // lines. Multi-pax rows use the category-specific plural
+    // (ילדים / children / enfants — תינוקות / infants / bébés) so
+    // they never collide with the adult-row patterns downstream
+    // (those anchor on "נוסעים" / "passengers" / "passagers").
+    buildCategoryRow(category, type, count, lang) {
+      const arrow = lang === "he" ? "👈" : "👉";
+      const indent = "   ";
+      if (lang === "he") {
+        const sing = category === "child" ? "ילד" : "תינוק";
+        const plur = category === "child" ? "ילדים" : "תינוקות";
+        if (type === "per") {
+          return `${indent}${arrow}*000 דולר ל${sing}**`;
+        }
+        return `${indent}${arrow}*000 דולר ${count}x ${plur}**`;
+      }
+      if (lang === "en") {
+        const sing = category === "child" ? "child" : "infant";
+        const plur = category === "child" ? "children" : "infants";
+        if (type === "per") {
+          return `${indent}${arrow}*USD 000 per ${sing}**`;
+        }
+        return `${indent}${arrow}*USD 000 for ${count}x ${plur}**`;
+      }
+      if (lang === "fr") {
+        const sing = category === "child" ? "enfant" : "bébé";
+        const plur = category === "child" ? "enfants" : "bébés";
+        if (type === "per") {
+          return `${indent}${arrow}*000 USD par ${sing}**`;
+        }
+        return `${indent}${arrow}*000 USD ${count}x ${plur}**`;
+      }
+      return "";
+    },
+    // Assembles all the new category rows that should follow the
+    // adult block, in canonical industry order (adult → child →
+    // infant). Per-pax row is added when count ≥ 1; the multi row
+    // is added in addition when count ≥ 2 (same gating as the adult
+    // section uses). Returns a string that starts with a leading
+    // newline so it splices cleanly onto the end of the adult
+    // multi-pax line, or "" when nothing to add.
+    buildCategoryRows(categories, lang) {
+      const rows = [];
+      if (categories.children >= 1) {
+        rows.push(
+          this.buildCategoryRow("child", "per", categories.children, lang)
+        );
+        if (categories.children >= 2) {
+          rows.push(
+            this.buildCategoryRow(
+              "child",
+              "multi",
+              categories.children,
+              lang
+            )
+          );
+        }
+      }
+      if (categories.infants >= 1) {
+        rows.push(
+          this.buildCategoryRow("infant", "per", categories.infants, lang)
+        );
+        if (categories.infants >= 2) {
+          rows.push(
+            this.buildCategoryRow(
+              "infant",
+              "multi",
+              categories.infants,
+              lang
+            )
+          );
+        }
+      }
+      return rows.length ? "\n" + rows.join("\n") : "";
+    },
+    // Injects the child/infant rows after the adult multi-pax row in
+    // the price-details block. Runs AFTER applyPriceFromPnr so the
+    // adult row is already its final form (real amount, real count)
+    // and BEFORE applyPluralization so the adult-singular cleanup
+    // (strip " לנוסע", drop the "Nx נוסעים" row when adults == 1)
+    // runs unchanged on the substituted text. No-op when neither
+    // category is present.
+    applyCategoryRows(text, categories) {
+      const lang = this.selectedLang;
+      if (!text) return text;
+      if (categories.children === 0 && categories.infants === 0) {
+        return text;
+      }
+      const newRows = this.buildCategoryRows(categories, lang);
+      if (!newRows) return text;
+      if (lang === "he") {
+        return text.replace(
+          /(👈\*\d+\s+\S+\s+\d+x נוסעים\*\*)/,
+          `$1${newRows}`
+        );
+      }
+      if (lang === "en") {
+        return text.replace(
+          /((?:👈|👉)\*\S+\s+\d+\s+for\s+\d+x\s+passengers\*\*)/i,
+          `$1${newRows}`
+        );
+      }
+      if (lang === "fr") {
+        return text.replace(
+          /((?:👈|👉)\*\d+\s+\S+\s+\d+x\s+passagers\*\*)/i,
+          `$1${newRows}`
+        );
+      }
+      return text;
+    },
+    // Quote-price parser. Looks at the raw Amadeus text for a token
+    // like "2000USD" / "2000 usd" / "2000NIS" — Gad types this inline
+    // when he wants the standard quote to show a real fare instead of
+    // the literal "000" placeholder he left in his template. Case
+    // insensitive; first match wins (he's expected to type one price
+    // per booking). Returns null when no token is found so the caller
+    // can skip the substitution entirely (leaving Gad's "000" in
+    // place is the right fallback — the agent will fill it in by
+    // hand the way he always has).
+    parseQuotePrice(rawPnr) {
+      if (!rawPnr) return null;
+      const m = String(rawPnr).match(/\b(\d+)\s*(USD|NIS|EUR)\b/i);
+      if (!m) return null;
+      return {
+        amount: parseInt(m[1], 10),
+        currency: m[2].toUpperCase()
+      };
+    },
+    // Localized currency token used inside the rendered quote lines.
+    // Hebrew uses the full word, English keeps the ISO code (Gad's
+    // template already reads "USD 000"), French uses the symbol (his
+    // template reads "000 $"). Falls back to the raw ISO code when
+    // the currency is one we haven't mapped yet so a new currency
+    // still renders something usable instead of breaking.
+    currencyWord(currency, lang) {
+      const map = {
+        USD: { he: "דולר", en: "USD", fr: "$" },
+        NIS: { he: "שקל", en: "NIS", fr: "₪" },
+        EUR: { he: "אירו", en: "EUR", fr: "€" }
+      };
+      return (map[currency] && map[currency][lang]) || currency;
+    },
+    // Inserts Gad's quote price into the per-pax and multi-pax rows of
+    // the price-details block. Runs BEFORE applyPluralization so the
+    // singular/plural pass downstream still has its anchors in place
+    // ("לנוסע" / "per passenger" / "par passager") on the per-pax row.
+    //
+    // No-op when:
+    //   - Gad didn't type a price token in the Amadeus input — we
+    //     leave his "000" placeholder alone (manual fill, same as
+    //     before this feature existed).
+    //   - Neither row is present in the template — match fails
+    //     silently.
+    //
+    // For 1 pax, the multi-pax row gets substituted here too even
+    // though pluralization will then strip it — the substitution is
+    // cheap and keeps the logic uniform regardless of count.
+    applyPriceFromPnr(text, adultCount) {
+      if (!text) return text;
+      const price = this.parseQuotePrice(
+        this.data.smartAmadeusCode || ""
+      );
+      if (!price) return text;
+      const lang = this.selectedLang;
+      const word = this.currencyWord(price.currency, lang);
+      const perPax = price.amount;
+      // Adult-row total uses the ADULT headcount (children + infants
+      // have their own rows downstream, computed independently of the
+      // adult fare). When there's only 1 adult, the multi-pax row
+      // gets substituted here anyway — pluralization will then drop
+      // the line, keeping the logic uniform regardless of count.
+      const count = Math.max(Number(adultCount) || 1, 1);
+      const total = perPax * count;
+      let out = text;
+
+      if (lang === "he") {
+        // Per-pax row — "👈*<num> <currency> לנוסע**". Currency token
+        // is whatever Gad wrote in the template (his stock is "דולר");
+        // we replace it with the language-correct word for the price
+        // he typed in the Amadeus, even if those differ ("2000NIS" in
+        // a template that read "דולר" → renders "2000 שקל").
+        out = out.replace(
+          /👈\*\d+\s+\S+\s+לנוסע\*\*/g,
+          `👈*${perPax} ${word} לנוסע**`
+        );
+        // Multi-pax row — same structure with the "Nx נוסעים" tail.
+        out = out.replace(
+          /👈\*\d+\s+\S+\s+\d+x נוסעים\*\*/g,
+          `👈*${total} ${word} ${count}x נוסעים**`
+        );
+      } else if (lang === "en") {
+        // Per-pax row — Gad's EN format is "<currency> <num> per X**".
+        // (?:👈|👉) tolerates either pointing direction, alternation
+        // (not character class) because the emojis are surrogate
+        // pairs.
+        out = out.replace(
+          /(?:👈|👉)\*\S+\s+\d+\s+per\s+(?:passenger|person|pax)\*\*/gi,
+          `👉*${word} ${perPax} per passenger**`
+        );
+        // Multi-pax row — "<currency> <num> for Nx passengers**".
+        out = out.replace(
+          /(?:👈|👉)\*\S+\s+\d+\s+for\s+\d+x\s+passengers\*\*/gi,
+          `👉*${word} ${total} for ${count}x passengers**`
+        );
+      } else if (lang === "fr") {
+        // Per-pax row — Gad's FR format is "<num> <symbol> par X**".
+        out = out.replace(
+          /(?:👈|👉)\*\d+\s+\S+\s+par\s+(?:passager|personne)\*\*/gi,
+          `👉*${perPax} ${word} par passager**`
+        );
+        // Multi-pax row — "<num> <symbol> Nx passagers**".
+        out = out.replace(
+          /(?:👈|👉)\*\d+\s+\S+\s+\d+x\s+passagers\*\*/gi,
+          `👉*${total} ${word} ${count}x passagers**`
+        );
+      }
+
+      return out;
+    },
+    // Language-aware post-processor that conditions the bottom-of-quote
+    // "price details" + "ticket conditions" blocks on the actual
+    // passenger count. Runs after the {{...}} substitution so it
+    // operates on literal text from Gad's Supabase row (none of the
+    // markers it looks for are placeholders).
+    //
+    // Hebrew rules (Gad's most-edited template):
+    //   1. "הכרטיס/ים" → "הכרטיס" (1 pax) | "הכרטיסים" (2+ pax)
+    //   2. " לנוסע"    → stripped (1 pax) | kept (2+ pax)
+    //   3. "👈*… 2x נוסעים …**" row → line removed (1) | "2x" → real
+    //      passenger count (2+).
+    //
+    // English rules — mirror the Hebrew structure with Gad's EN
+    // phrasings:
+    //   1. Any "word(s)" → drop "(s)" for 1, append "s" for 2+
+    //      (Gad uses "(s)" as the canonical singular/plural marker).
+    //   2. " per passenger" → stripped (1) | kept (2+)
+    //   3. "👈*… 2x passengers …**" row → line removed (1) | "2x" →
+    //      real passenger count (2+).
+    //
+    // French rules — Gad mixes "(s)" suffixes with article pairs
+    // ("du/des", "le/les", "votre/vos", …) so we handle both:
+    //   1. Article pairs: take the singular (first) or plural (second)
+    //      side of the slash.
+    //   2. Any "word(s)" → drop or +s, same as English.
+    //   3. " par passager" → stripped (1) | kept (2+)
+    //   4. "👈*… 2x passagers …**" row → line removed (1) | "2x" →
+    //      real passenger count (2+).
+    //
+    // Why post-process rather than add placeholders: the rules touch
+    // many lines across the quote bottom and are mechanical; routing
+    // them through placeholders would force Gad to edit his Supabase
+    // row, which the autofill engine deliberately avoids (his
+    // authoring conventions stay intact in storage).
+    applyPluralization(text, adultCount, paxCount) {
+      const lang = this.selectedLang;
+      if (!text) return text;
+      // Splitting the two counts lets the adult-row rules (per-pax
+      // qualifier strip + multi row) react to the ACTUAL adult
+      // headcount, while ticket-noun rules (the "/ים" / "(s)" /
+      // "du/des" pairs) still react to the total ticketed count
+      // (adults + children — infants share an adult's ticket).
+      const isAdultSingular = (Number(adultCount) || 0) <= 1;
+      const isPaxSingular = (Number(paxCount) || 0) <= 1;
+      let out = text;
+
+      if (lang === "he") {
+        // Rule 1 — "הכרטיס/ים" → singular/plural noun. Tied to TICKET
+        // count (paxCount) since it refers to total tickets issued.
+        out = out.replace(
+          /הכרטיס\/ים/g,
+          isPaxSingular ? "הכרטיס" : "הכרטיסים"
+        );
+
+        // Rule 2 — leading-space included so removal collapses both
+        // the word AND the spacing in front of it; otherwise a stray
+        // space would be left after the price. Tied to ADULT count —
+        // this qualifier belongs to the adult per-pax row, which only
+        // makes sense when there's 2+ adults.
+        if (isAdultSingular) {
+          out = out.replace(/ לנוסע/g, "");
+        }
+
+        // Rule 3 — multi-pax adult row. Singular drops the line
+        // entirely (including its leading indentation and trailing
+        // newline); plural substitutes Gad's "2x" placeholder with
+        // the real adult count.
+        if (isAdultSingular) {
+          out = out.replace(
+            /^[ \t]*👈\*[^\n]*\d+x נוסעים[^\n]*\n?/gm,
+            ""
+          );
+        } else {
+          out = out.replace(
+            /\d+x נוסעים/g,
+            `${adultCount}x נוסעים`
+          );
+        }
+      } else if (lang === "en") {
+        // Rule 1 — generic "(s)" marker. Matches any letter-only word
+        // followed by "(s)": "ticket(s)", "passenger(s)", etc. Tied
+        // to total ticket count (paxCount), same rationale as the
+        // Hebrew "/ים" rule.
+        out = out.replace(
+          /([A-Za-zÀ-ÿ]+)\(s\)/g,
+          isPaxSingular ? "$1" : "$1s"
+        );
+
+        // Rule 2 — per-pax qualifier stripped for singular. Gad
+        // alternates between " per passenger", " per person", and
+        // " per pax" across his EN template, so we accept all three.
+        // Tied to ADULT count.
+        if (isAdultSingular) {
+          out = out.replace(/ per (?:passenger|person|pax)/gi, "");
+        }
+
+        // Rule 3 — multi-pax adult row. Same logic as Hebrew but
+        // with "passengers" anchor. Gad's EN template uses 👉
+        // (right-pointing, natural for LTR) instead of 👈; we accept
+        // either via alternation. NOT a character class — emojis are
+        // surrogate pairs and `[👈👉]` without the `u` flag would
+        // only match a single half, leaving the other half to break
+        // the rest of the pattern.
+        if (isAdultSingular) {
+          out = out.replace(
+            /^[ \t]*(?:👈|👉)\*[^\n]*\d+x passengers[^\n]*\n?/gim,
+            ""
+          );
+        } else {
+          out = out.replace(
+            /\d+x passengers/gi,
+            `${adultCount}x passengers`
+          );
+        }
+      } else if (lang === "fr") {
+        // Rule 1a — French article pairs Gad writes with a slash in
+        // his template ("du/des billet(s)", "votre/vos client(s)",
+        // etc.). Tied to total ticket count (paxCount).
+        const articlePairs = [
+          ["du", "des"],
+          ["le", "les"],
+          ["la", "les"],
+          ["un", "des"],
+          ["mon", "mes"],
+          ["ton", "tes"],
+          ["son", "ses"],
+          ["votre", "vos"],
+          ["notre", "nos"],
+          ["ce", "ces"]
+        ];
+        for (const [sing, plur] of articlePairs) {
+          const re = new RegExp(`\\b${sing}\\/${plur}\\b`, "gi");
+          out = out.replace(re, isPaxSingular ? sing : plur);
+        }
+
+        // Rule 1b — generic "(s)" marker. Tied to total ticket count.
+        // Latin-1 range covers French accented letters (À-ÿ).
+        out = out.replace(
+          /([A-Za-zÀ-ÿ]+)\(s\)/g,
+          isPaxSingular ? "$1" : "$1s"
+        );
+
+        // Rule 2 — per-pax qualifier stripped for singular. Same
+        // alternation rationale as English: Gad uses both
+        // " par passager" and " par personne" in his FR template.
+        // Tied to ADULT count.
+        if (isAdultSingular) {
+          out = out.replace(/ par (?:passager|personne)/gi, "");
+        }
+
+        // Rule 3 — multi-pax adult row. Same alternation rationale
+        // as English: surrogate-pair emojis must be matched as full
+        // literals (not in a character class) so both halves stay
+        // together.
+        if (isAdultSingular) {
+          out = out.replace(
+            /^[ \t]*(?:👈|👉)\*[^\n]*\d+x passagers[^\n]*\n?/gim,
+            ""
+          );
+        } else {
+          out = out.replace(
+            /\d+x passagers/gi,
+            `${adultCount}x passagers`
+          );
+        }
+      }
+
+      return out;
+    },
+    // Returns the full ticket-issuance phrase with the embedded fare
+    // clause, matched to the current language and passenger count.
+    // Always includes the fare clause — Gad's Standard Airfare Quote
+    // assumes the customer is choosing a fare even on single-passenger
+    // tickets ("specifying the chosen fare for you"). The plural form
+    // shifts the recipient to "כל אחד מהנוסעים" / "each" / "chacun des
+    // passagers" depending on language.
+    ticketNounFor(count, lang) {
+      const isSingular = (Number(count) || 0) <= 1;
+      if (lang === "he") {
+        return isSingular
+          ? "כרטיסך תוך ציון התעריף שנבחר עבורך"
+          : "כרטיסכם תוך ציון התעריף שנבחר עבור כל אחד מהנוסעים";
+      }
+      if (lang === "fr") {
+        return isSingular
+          ? "votre billet, en précisant le tarif choisi pour vous"
+          : "vos billets, en précisant le tarif choisi pour chacun des passagers";
+      }
+      return isSingular
+        ? "your ticket, specifying the chosen fare for you"
+        : "your tickets, specifying the chosen fare for each";
     },
     // Returns the seat-label word ("מושב"/"מושבים" / "Seat"/"Seats" /
     // "Siège"/"Sièges") matching the current preview language, with plural

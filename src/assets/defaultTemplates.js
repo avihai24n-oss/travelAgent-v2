@@ -62,7 +62,10 @@ export const PLACEHOLDERS = {
   NO_SHOW: { he: "אי-התייצבות", en: "No show", fr: "No show" },
   TICKET_ISSUANCE: { he: "מועד הנפקה", en: "Ticket issuance", fr: "Émission du billet" },
   TRAVELERS_ICON: { he: "אייקון נוסעים (1/2/3+)", en: "Travelers icon (1/2/3+)", fr: "Icône voyageurs (1/2/3+)" },
-  TRAVEL_NOUN: { he: "נסיעתך / נסיעתכם", en: "your trip", fr: "votre voyage" }
+  TRAVELER_FIRST_NAMES: { he: "שמות פרטיים של כל הנוסעים", en: "All travelers' first names", fr: "Prénoms de tous les voyageurs" },
+  TRAVEL_NOUN: { he: "נסיעתך / נסיעתכם", en: "your trip", fr: "votre voyage" },
+  TICKET_NOUN: { he: "כרטיסך / כרטיסכם + תניית תעריף", en: "your ticket(s) + fare clause", fr: "votre billet / vos billets + tarif" },
+  TICKET_WORD: { he: "כרטיסך / כרטיסכם", en: "your ticket(s)", fr: "votre billet / vos billets" }
 };
 
 export const CATEGORIES = [
