@@ -539,6 +539,72 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!-- WELCOME DIALOG — first-visit "what's new" overlay -->
+    <!-- Shows once per release. Dismissal writes `welcome_seen:multifare-release-2026-06-13`
+         to localStorage so subsequent visits skip it. Future releases bump the key. -->
+    <q-dialog v-model="welcomeOpen" persistent>
+      <q-card class="welcome-dialog" dir="rtl">
+        <div class="welcome-header">
+          <div class="welcome-emoji">🎉</div>
+          <div class="welcome-title">ברוך הבא לעדכון חדש!</div>
+          <div class="welcome-subtitle">Multi Airfare בכל השפות + מסלול טיסות בלבד</div>
+        </div>
+
+        <q-card-section class="welcome-body">
+          <div class="welcome-section">
+            <div class="welcome-section-title">
+              <span class="welcome-section-icon">✨</span>
+              <span>Multi Airfare Quote — עכשיו בכל 3 השפות</span>
+            </div>
+            <div class="welcome-section-text">
+              שלוש שכבות מחיר (<strong>Eco-Lite</strong> / <strong>Eco-Classic</strong> / <strong>Eco-Flex</strong>) זמינות עכשיו בעברית, באנגלית ובצרפתית — באותו סגנון של ההצעה הסטנדרטית שלך. <strong>בעברית ובצרפתית — חדש לגמרי.</strong> באנגלית נשאר בדיוק כפי שכתבת.
+            </div>
+          </div>
+
+          <div class="welcome-section">
+            <div class="welcome-section-title">
+              <span class="welcome-section-icon">✈️</span>
+              <span>Flights Only — מסלול טיסות בלבד</span>
+            </div>
+            <div class="welcome-section-text">
+              מצב חדש שמייצר רק את בלוק <strong>מסלול הטיסה</strong> — בלי פתיחה, בלי תנאי כרטיס, בלי חתימה. שימושי כשהלקוח רק רוצה לראות את הטיסות.
+            </div>
+          </div>
+
+          <div class="welcome-section">
+            <div class="welcome-section-title">
+              <span class="welcome-section-icon">🎯</span>
+              <span>איך משתמשים בפיצ׳רים החדשים?</span>
+            </div>
+            <div class="welcome-section-text">
+              <div class="welcome-howto-item">
+                <strong>1. תפריט הבחירה</strong> — עכשיו עם אייקונים:
+                <div class="welcome-howto-sub">⭐ Standard / ✈️ Flights Only / 🎫 Multi Airfare</div>
+              </div>
+              <div class="welcome-howto-item">
+                <strong>2. צ׳קבוקסים חדשים</strong> — ב־Multi Airfare תקבל קבוצה "🎫 Airfare options" עם צ׳קבוקס לכל שכבה (🟥 / 🟩 / 🟦). כברירת מחדל כולן דלוקות. רוצה להציע ללקוח רק 2 שכבות? פשוט תכבה אחת.
+              </div>
+              <div class="welcome-howto-item">
+                <strong>3. התראה חכמה</strong> — אם תכבה את Eco-Lite אבל תשאיר את EL AL Protect — המערכת תזכיר לך שהבלוק עדיין מזכיר אותו.
+              </div>
+            </div>
+          </div>
+        </q-card-section>
+
+        <q-card-actions align="center" class="welcome-actions">
+          <q-btn
+            color="primary"
+            unelevated
+            no-caps
+            size="md"
+            class="welcome-cta"
+            label="הבנתי, בוא נתחיל! 🚀"
+            @click="dismissWelcome"
+          />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -588,6 +654,12 @@ import {
 } from "src/assets/nameTranslator.js";
 import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
 
+// Welcome popup release tag. Bump this on every release that ships new
+// features worth highlighting — everyone sees the dialog once more.
+// Module-level const (NOT on the component options) so it isn't reactive
+// and isn't accidentally persisted with the component state.
+const WELCOME_KEY = "welcome_seen:multifare-he-fr-2026-06-13";
+
 export default {
   components: { WhatsAppPhonePreview },
   mixins: [messageMixin],
@@ -602,6 +674,11 @@ export default {
       destinationPickerOpen: false,
       pendingDestinationCode: null,
       selectedFinalDestination: null,
+      // Welcome dialog — first-visit "what's new" overlay. Stays open
+      // until the user clicks the CTA, which writes a per-release flag to
+      // localStorage so subsequent visits skip it. Bump WELCOME_KEY on
+      // every release that warrants a fresh greeting.
+      welcomeOpen: false,
       apiStatus: "unknown", // "unknown" | "ok" | "offline" | "misconfigured"
       TRAVELER_TYPES: TRAVELER_TYPES,
       CLASSES_TYPE_MAP: CLASSES_TYPE_MAP,
@@ -657,8 +734,23 @@ export default {
       this.selectedLang,
       this.selectedTemplateCategory
     );
+    // First-visit welcome popup. Shows once per release; the localStorage
+    // key carries the release tag so bumping it in code re-opens the
+    // popup for everyone (the user effectively opts-in to "show me what's
+    // new this time too"). Wrapped in try/catch — Safari private mode
+    // throws on localStorage access.
+    try {
+      const seen = window.localStorage.getItem(WELCOME_KEY);
+      if (seen !== "1") this.welcomeOpen = true;
+    } catch (e) { /* localStorage unavailable — silently skip */ }
   },
   methods: {
+    dismissWelcome() {
+      try {
+        window.localStorage.setItem(WELCOME_KEY, "1");
+      } catch (e) { /* localStorage full / private mode — best-effort only */ }
+      this.welcomeOpen = false;
+    },
     onAddTraveler() {
       this.data.travelers.push({
         name: "",
@@ -3432,6 +3524,137 @@ body.body--dark .section-toggle-group {
   .section-toggles-list {
     display: flex !important;
   }
+}
+
+/* Welcome dialog — first-visit "what's new" greeting overlay.
+ * Sized for comfortable reading on mobile + desktop; the colored
+ * header gives it a "greeting card" feel rather than a notification.
+ * RTL is hard-coded on the q-card since the content is Hebrew. */
+.welcome-dialog {
+  width: 100%;
+  max-width: 560px;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+}
+
+.welcome-header {
+  text-align: center;
+  background: linear-gradient(135deg, #4a90e2 0%, #6cb1f7 60%, #8ccfff 100%);
+  color: white;
+  padding: 28px 24px 22px;
+}
+
+.welcome-emoji {
+  font-size: 54px;
+  line-height: 1;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+.welcome-title {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  letter-spacing: -0.2px;
+}
+
+.welcome-subtitle {
+  font-size: 14px;
+  opacity: 0.95;
+  font-weight: 500;
+}
+
+.welcome-body {
+  padding: 22px 24px 14px;
+  background: #fafbfd;
+}
+
+.welcome-section {
+  margin-bottom: 20px;
+}
+
+.welcome-section:last-child {
+  margin-bottom: 0;
+}
+
+.welcome-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0b1730;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.welcome-section-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.welcome-section-text {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #3a4554;
+}
+
+.welcome-howto-item {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 10px;
+  border-right: 3px solid #4a90e2;
+}
+
+.welcome-howto-item strong {
+  color: #0b1730;
+}
+
+.welcome-howto-sub {
+  margin-top: 4px;
+  font-size: 13.5px;
+  color: #475569;
+  letter-spacing: 0.2px;
+}
+
+.welcome-actions {
+  padding: 12px 24px 22px;
+  background: #fafbfd;
+}
+
+.welcome-cta {
+  min-width: 200px;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 8px 24px;
+  border-radius: 999px;
+}
+
+/* Dark-mode adaptations — match the existing dest-dialog tweaks below. */
+body.body--dark .welcome-dialog {
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+body.body--dark .welcome-body,
+body.body--dark .welcome-actions {
+  background: #1a2032;
+}
+body.body--dark .welcome-section-title {
+  color: #e3e8f0;
+}
+body.body--dark .welcome-section-text {
+  color: #b6becc;
+}
+body.body--dark .welcome-howto-item {
+  background: #232b3f;
+  border-right-color: #6cb1f7;
+}
+body.body--dark .welcome-howto-item strong {
+  color: #e3e8f0;
+}
+body.body--dark .welcome-howto-sub {
+  color: #8b95a8;
 }
 
 /* Destination picker dialog */
