@@ -69,7 +69,8 @@ export const PLACEHOLDERS = {
 };
 
 export const CATEGORIES = [
-  { key: "flight", label: { he: "הצעת טיסה", en: "Flight Quote", fr: "Devis de vol" } }
+  { key: "flight", label: { he: "הצעת טיסה", en: "Flight Quote", fr: "Devis de vol" } },
+  { key: "flights_only", label: { he: "מסלול טיסות בלבד", en: "Flights Only", fr: "Itinéraire seul" } }
 ];
 
 export const LANGUAGES = [
@@ -261,29 +262,35 @@ Cordialement
 🏢 American Express Global Business Travel
 📞 Mob. 972-54-5727055
 ✉️ gad@gbtil.co.il`
-  }
-};
+  },
+  // ─── Flights-only mode ───
+  // Renders only the itinerary header + per-flight blocks — no greeting,
+  // no airline/class/price/conditions/signature. The agent picks this
+  // category from the dropdown when they want a quick "just the routes"
+  // reply (e.g. when the customer already saw the full quote and just
+  // wants to re-confirm the schedule). Uses the same {{FLIGHT_*}} per-
+  // flight placeholders as the standard `flight` template so expandFlightBlock
+  // replicates the block per parsed PNR flight and groups outbound/inbound
+  // automatically.
+  flights_only: {
+    he: `*מסלול הטיסות 🌍*
 
-// Multi-fare quote template — used by the toggle in the Preview area.
-// Same flight-block engine as DEFAULT_TEMPLATES.flight (identical itinerary
-// format kept verbatim from the regular template), but the single AIRFARE
-// section is replaced by three fare tiers (OPTIMA / COMFORT / FLEX). Manual-
-// fill fields (prices, change/cancel fees, passenger count) are literal ___
-// so the agent fills them in by editing the rendered message.
-// Currently EN only; he/fr to be added later — until then the toggle is hidden.
-export const MULTI_FARE_TEMPLATES = {
-  en: `*{{CUSTOMER_NAME}}*, Shalom!
-⏰ *Your tickets issuance approval❗*
-👉 *{{TICKET_ISSUANCE}}*
+*{{FLIGHT_DIRECTION}}*
+טיסת {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
+{{FLIGHT_ORIGIN_CITY}} ⬅️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
+*{{FLIGHT_CLASS}}*
+ממריא {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
+נוחת    {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}
 
-In reply to your request, you'll find below my *Updated proposal* for your *(👤{{CUSTOMER_NAME}})* upcoming trip to *{{DESTINATION}}*
-{{ALL_NAMES}}
-
-Please reply directly to this WhatsApp message with:
-✅ Your approval to issue the *___ tickets*
-✅ Your selected fare option: 🟥 *OPTIMA* / 🟩 *COMFORT* / 🟦 *FLEX*
-
-*Itinerary 🌍*
+*{{FLIGHT_DIRECTION}}*
+טיסת {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
+{{FLIGHT_ORIGIN_CITY}} ({{FLIGHT_ORIGIN_CODE}}) ⬅️ {{FLIGHT_DEST_CITY}}
+*{{FLIGHT_CLASS}}*
+ממריא {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
+נוחת    {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}`,
+    en: `*Itinerary 🌍*
 
 *{{FLIGHT_DIRECTION}}*
 {{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
@@ -299,97 +306,389 @@ Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FL
 *{{FLIGHT_CLASS}}*
 Dpt. {{FLIGHT_DEPART_DAY}}. {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
 Arr.  {{FLIGHT_ARRIVE_DAY}}. {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}`,
+    fr: `*Itinéraire 🌍*
+
+*{{FLIGHT_DIRECTION}}*
+{{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
+{{FLIGHT_ORIGIN_CITY}} ➡️ {{FLIGHT_DEST_CITY}} ({{FLIGHT_DEST_CODE}})
+*{{FLIGHT_CLASS}}*
+Dpt. {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
+Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
 💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}
 
-*Airline:* ({{AIRLINE_CODE}}) ✈️
-*{{AIRLINE_NAME}}*
+*{{FLIGHT_DIRECTION}}*
+{{FLIGHT_AIRLINE}} - *{{FLIGHT_NUMBER}}*
+{{FLIGHT_ORIGIN_CITY}} ({{FLIGHT_ORIGIN_CODE}}) ➡️ {{FLIGHT_DEST_CITY}}
+*{{FLIGHT_CLASS}}*
+Dpt. {{FLIGHT_DEPART_DAY}} {{FLIGHT_DEPART_DATE}} {{FLIGHT_DEPART_MONTH}} {{FLIGHT_DEPART_TIME}}
+Arr.  {{FLIGHT_ARRIVE_DAY}} {{FLIGHT_ARRIVE_DATE}} {{FLIGHT_ARRIVE_MONTH}} {{FLIGHT_ARRIVE_TIME}}
+💺 {{FLIGHT_SEAT_LABEL}} *{{FLIGHT_SEATS}}*{{FLIGHT_SEAT_TYPES}}{{FLIGHT_MEAL}}{{FLIGHT_WHEELCHAIR}}`
+  },
+  // Multi Airfare Quote (Same flights) — Hebrew fallback. Gad authored the
+  // EN row in Supabase (custom_mp3smmmgw4p5/en) but no HE row exists yet,
+  // so this fallback feeds loadTemplate() when the agent picks the category
+  // in Hebrew. Built from Gad's HE Standard voice (custom_mpsx5w8le42j/he)
+  // + the EN Multi Airfare's 3-tier structure (Eco-Lite/Classic/Flex).
+  // Once Gad authors his own HE version via Admin, his Supabase row will
+  // override this fallback automatically (loadTemplate prefers localStorage).
+  // Full authoring rationale + vocabulary mapping is in docs/QUOTE_STYLE_GUIDE.md.
+  custom_mp3smmmgw4p5: {
+    he: `*שם הנוסע*, שלום!
+⏰ *מצריך את אישורך לכרטוס תוך 24 שעות*❗
+👈*יום א׳ ב׳ ג׳ ד׳ ה׳ ו׳ 0 חודש | שעה*
 
-*Class of Travel* ✈️
-{{CLASS_LINE}}
+בהמשך לפנייתך, להלן פרטי ההצעה המבוקשת עבור נסיעתך/כם *👤 / 👥 / 🧑‍🧒 / 🧑‍🧒‍🧒 / 🧑‍🧑‍🧒 / 🧑‍🧑‍🧒‍🧒*
+הקרובה ל-*יעד* בתאריך *תאריך_יציאה*.
 
-*AIRFARE OPTIONS* 🎫
-For the same itinerary above, you may choose one of the following *3 fare options*:
+נא *אשר/י* בבקשה את *הנפקת כרטיסך (/ הכרטיס / _ כרטיסכם* תוך ציון התעריף שנבחר עבור כל אחד מהנוסעים), במענה חוזר מיידי מתוך הודעת ווצאפ זו, *בהתאם לתוכן ההצעה.*
 
------------------------------
+▬▬▬▬▬▬▬▬
 
-🟥 *OPTIMA Rate* 🎫
-💳 *Price:*
-👉 *___ x ___ Adults*
+*מסלול הטיסות 🌍*
 
-*Baggage Allowance* 🧳
-✅ 1 checked bag *23 kg*
-✅ 1 handbag *8 kg*
 
-*Preselected Seats* 💺
-❌ Not included
-*Seats can only be selected 24 hours before each flight* ❗
 
-*Ticket Restrictions* ⚠️
-▪️ Change: *___ p.p.*
-  *(+ fare difference, if applicable)*
-▪️ Cancellation: *Non-refundable* ❗
-▪️ No-show: *Total loss*
 
------------------------------
+ 💺מושב/י *00A-B-C//00D*
+    מעבר / חלון / מעבר+חלון / חלון+אמצעי / מעבר+אמצעי
+    מושב מועדף / מושב ספייס / מושב אקונומי קומפורט
+ 🍽️ *כשרה / צמחוני / ילדים / גלאט*
+ 👩‍🦽*כיסא גלגלים
 
-🟩 *COMFORT Rate* 🎫
-💳 *Price:*
-👉 *___ x ___ Adults*
+▬▬▬▬▬▬▬▬
 
-*Baggage Allowance* 🧳
-✅ 1 checked bag *23 kg*
-✅ 1 handbag *8 kg*
+*חברת/ות תעופה:(LY,XX)* ✈️
+ *אלעל* ״קונקט״ בשילוב עם *אייר*
+*סונדור**
+*(חברת בת של אלעל)לתשומת לבך טיסות מתופעלות במטוסי חברת *ABCDEF*!
 
-*Preselected Seats* 💺
-✅ Standard seats included
+▔▔▔▔▔▔▔
 
-*Ticket Restrictions* ⚠️
-▪️ Change: *___ p.p.*
-  *(+ fare difference, if applicable)*
-▪️ Cancellation: *___ p.p.*
-▪️ No-show: *Total loss*
+✈️ *מחלקת הנסיעה*✈️
+   💺 *מחלקת תיירים (Economy)*
+   🥂 *מחלקת פרמיום (Premium)*
+   👔 *מחלקת עסקים (Business)*
 
------------------------------
+▔▔▔▔▔▔▔
 
-🟦 *FLEX Rate* 🎫
-💳 *Price:*
-👉 *___ x ___ Adults*
+🔀 שילוב מחלקות בטיסות 🔀
 
-*Baggage Allowance* 🧳
-✅ 1 checked bag *23 kg*
-✅ 1 handbag *8 kg*
+ ✈️ ת״א ⬅️ אבגדה
+   💺 *מחלקת תיירים (Economy)*
+   🥂 *מחלקת פרמיום (Premium)*
+   👔 *מחלקת עסקים (Business)*
 
-*Preselected Seats* 💺
-✅ Standard / preferred seats included
+ ✈️ אבגדה ⬅️ ת״א
+   💺 *מחלקת תיירים (Economy)*
+   🥂 *מחלקת פרמיום (Premium)*
+   👔 *מחלקת עסקים (Business)*
 
-*Ticket Restrictions* ⚠️
-▪️ Change: *___ p.p.*
-   *(+ fare difference, if applicable)*
-▪️ Cancellation: *___ p.p.*
-▪️ No-show: *Total loss*
+▬▬▬▬▬▬▬▬
 
------------------------------
+*אפשרויות תעריף 🎫*
+לנוחותך, ניתן לבחור בין אפשרויות התעריף הבאות בהתאם לגמישות והשירותים שתעדיף/י:
 
-👉 *Please indicate your preferred fare option for each passenger.*
+🟥 *תעריף אקו-לייט* 🎫
+💳 *מחיר הכרטיס:*
+  👈 *000 דולר לנוסע*
+  👈 *000 דולר × 0 נוסעים*
 
-*Important Notes* ❗
-▪️ Fares are subject to change without prior notice until tickets are issued.
-▪️ Seats, fares, and conditions are only guaranteed once tickets are issued.
-▪️ *p.p. = per person*
 
-⏱️ *Ticket issuance deadline*
+*כבודה מותרת* 🧳
+     (לנוסע)
+ ❌ ללא מזוודה
+ ✅ מזוודה 1 (23 ק״ג)
+ ✅ תיק יד 1 *8 ק״ג*
+
+*הושבה מראש* 💺
+ ❌ אינה כלולה
+ ✅ מושבים סטנדרטיים*
+  *(בכפוף לזמינות)
+
+*תנאי הכרטיס* ⚠️
+ 👇גובה הקנס לנוסע👇
+▪️ שינוי: 000$*
+       *(+הפרשי מחיר)
+▪️ ביטול: 000$
+   👈*ללא החזר❗*
+▪️ אי-התייצבות: הפסד מלא
+
+▬▬▬▬▬▬▬▬
+
+🟩 *תעריף אקו-קלאסיק* 🎫
+💳 *מחיר הכרטיס:*
+  👈 *000 דולר לנוסע*
+  👈 *000 דולר × 0 נוסעים*
+
+*כבודה מותרת* 🧳
+       (לנוסע)
+ ✅ מזוודה 1 *23 ק״ג*
+ ✅ תיק יד 1 *8 ק״ג*
+
+*הושבה מראש* 💺
+ ✅ מושבים סטנדרטיים*
+  *(בכפוף לזמינות)
+
+*תנאי הכרטיס* ⚠️
+ 👇גובה הקנס לנוסע👇
+▪️ שינוי: 000$*
+     *(+הפרשי מחיר)
+▪️ *ביטול:*
+    👈*ללא החזר*❗
+▪️ *אי-התייצבות: הפסד מלא*
+
+▬▬▬▬▬▬▬▬
+
+🟦 *תעריף אקו-פלקס* 🎫
+💳 *מחיר:*
+  👈 *0000 דולר*
+
+*כבודה מותרת* 🧳
+ ✅ מזוודה 1 *23 ק״ג*
+ ✅ תיק יד 1 *8 ק״ג*
+
+*הושבה מראש* 💺
+ ✅ מושבים סטנדרטיים / מועדפים*
+  *(בכפוף לזמינות)
+
+*תנאי הכרטיס* ⚠️
+▪️ שינוי: 75$*
+   *(+הפרשי מחיר)
+▪️ ביטול: 150$
+▪️ אי-התייצבות: הפסד מלא
+
+▬▬▬▬▬▬▬▬
+
+👈*נא להשיב בתשובה ישירה להודעת ווצאפ זו עם התעריף בו בחרת/ם לאישור הנפקת הכרטיס/ים*
+
+🟥 תעריף אקו-לייט / 🟩 תעריף אקו-קלאסיק / 🟦 תעריף אקו-פלקס
+
+*הערות חשובות ❗*
+▪️ התעריפים נתונים לשינוי ללא הודעה מוקדמת כל עוד הכרטיסים לא הונפקו.
+▪️ מושבים, תעריפים ותנאים מובטחים סופית רק לאחר הנפקת הכרטיסים.
+
+▬▬▬▬▬▬▬▬
+
+ 🛟 *אלעל פרוטקט*💳
+   👍 (ביטוח ביטול לכרטיס) 👍
+   👈 *000$ לנוסע*
+   👈 *$00 × 2 נוסעים**
+מאפשרת ביטול הנסיעה / הכרטיס עד 72 שעות לפני מועד ההמראה מהארץ לכל המאוחר *והסבת ערך כרטיסך / כרטיסיכם לשובר קרדיט* (בקיזוז 75$ / 100$ / 125$ / 150$ דמי ניהול לנוסע) *למימוש על טיסות אלעל עתידיות* (על ידיך או כל אדם אחר מטעמך).
+🫷 *הזהרה חשובה:* 🛑
+* מותנה ברכישה במעמד הכרטוס❗️
+* במקרה שהודעת ביטול הנסיעה תתקבל בטווח של פחות מ-72 שעות לפני מועד היציאה מהארץ, אז יחולו תנאי הביטול הסטנדרטים כמפורטים בהצעה זו מטה❗
+* התעריף אקו-לייט אינו מקנה את הזכות לרכוש ביטוח ביטול ״אלעל פרוטקט״ בשונה משאר התעריפים הנ״ל❗️
+
+▬▬▬▬▬▬▬▬
+
+*⏱️מועד אחרון לכרטוס*⌛
 🟥 🟩 🟦
-👉 *{{TICKET_ISSUANCE}}*
+ ⏰*כרטוס מיידי = היום*‼️
+ ⏰ *תוך 24 / 48 / 72 שעות*❗
+👈*יום ׳ 00 בחוד׳ | 00:00*
 
-To proceed, please reply directly to this WhatsApp message with your *fare choice* and your *approval to issue the tickets*.
+נא השב בבקשה במענך החוזר *מתוך גוף הצעת ווצאפ זו* עם *אישורך המידי להנפקת כרטיסך/סיכם* מתוך הסכמה למסלול & לתנאי התעריף שבחרת/ם כפי שפורטו מעלה.
 
-Thanks,
+✅ לסיום ההזמנה והנפקת הכרטיס / הנפקת כרטיסיכם:
+נא השב / השיבו מתוך הודעה זו וציין / ציינו את:
+ 1️⃣ התעריף בו בחרת / בחרתם
+ 2️⃣ התוספות שתרצה / תרצו להוסיף
+
+👈*קבלת המענה מהווה אישור למסלול ולתנאי התעריף.*
+
+תודה רבה,
+בברכה
+גד אלנקווה
+
+
+🏢 אמריקן אקספרס נסיעות עסקיות גלובליות
+📞 נייד: 054-5727055
+✉️ מייל gad@gbtil.co.il`,
+    // French fallback. Same architecture as the Hebrew sibling above —
+    // built from Gad's FR Standard voice (custom_mpsx5w8le42j/fr) plus
+    // the EN Multi Airfare's 3-tier fare structure. Activates via the
+    // EN-duplicate detection in loadTemplate() because the Supabase
+    // custom_mp3smmmgw4p5/fr row is currently a byte-copy of the EN row
+    // (Gad hasn't authored a real FR version yet). Vocabulary mapping
+    // and authoring rationale live in docs/QUOTE_STYLE_GUIDE.md.
+    fr: `* *, Shalom ❗️
+⏰ *L'émission du billet est requise sous 24 heures* ❗
+​👉*Dim / Lun / Mar / Mer / Jeu / Ven | 00 mois | HH:MM*
+
+Suite à votre demande, veuillez trouver ci-dessous l'offre proposée pour votre *👤 / 👥 / 🧑‍🧒 / 🧑‍🧒‍🧒 / 🧑‍🧑‍🧒 / 🧑‍🧑‍🧒‍🧒*
+voyage à destination de * *, au départ du *DATE_DEPART*.
+
+Merci de *confirmer* l'émission de votre/vos billet(s), en précisant le tarif choisi pour chaque passager, par réponse directe à ce message WhatsApp, *conformément au contenu de l'offre.*
+
+▬▬▬▬▬▬▬▬
+
+*Itinéraire des vols 🌍*
+
+
+
+ 💺 Siège(s) *00A-B-C // 00D*
+       Couloir / Hublot /
+       Couloir+Hublot /
+       Hublot+Centre /
+       Couloir+Centre
+       Siège préférentiel /
+       Siège Space
+ 🍽️ *Repas Casher / Végétarien / Enfant / Glatt*
+ 👩‍🦽*Assistance fauteuil roulant*
+
+▬▬▬▬▬▬▬▬
+
+*Compagnie(s) aérienne(s) : (LY, XX)* ✈️
+*EL AL « Connect »* en partenariat avec *Air     *
+*Sundor*
+*(filiale d'EL AL). Veuillez noter : vols opérés par les appareils de la compagnie * *!
+
+▔▔▔▔▔▔▔
+
+✈️ *Classe de voyage* ✈️
+   💺 *Classe Économique*
+   🥂 *Classe Premium Economy*
+   👔 *Classe Affaires /Business*
+
+▔▔▔▔▔▔▔
+
+🔀 Combinaison de classes 🔀
+
+ ✈️ TLV ➡️ DEST
+   💺 *Classe Économique*
+   🥂 *Classe Premium Economy*
+   👔 *Classe Affaires / Business*
+
+ ✈️ DEST ➡️ TLV
+   💺 *Classe Économique*
+   🥂 *Classe Premium Economy*
+   👔 *Classe Affaires / Business*
+
+▬▬▬▬▬▬▬▬
+
+*Options tarifaires 🎫*
+Pour votre commodité, vous pouvez choisir parmi les options tarifaires suivantes selon la flexibilité et les services que vous préférez :
+
+🟥 *Tarif Eco-Lite* 🎫
+💳 *Prix du billet :*
+  👉 *000 USD par passager*
+  👉 *000 USD × 0 passagers*
+
+
+*Franchise bagages* 🧳
+     (par passager)
+ ❌ Sans valise en soute
+ ✅ 1 bagage en soute (23 kg)
+ ✅ 1 bagage à main *8 kg*
+
+*Présélection de siège* 💺
+ ❌ Non incluse
+ ✅ Sièges standards*
+  *(Sous réserve de disponibilité)
+
+*Conditions du billet* ⚠️
+ 👇Pénalités par personne👇
+▪️ Modification : 000$*
+       *(+ différence tarifaire)
+▪️ Annulation : 000$
+   👉*Non remboursable❗*
+▪️ Non-présentation : Totalose
+
+▬▬▬▬▬▬▬▬
+
+🟩 *Tarif Eco-Classique* 🎫
+💳 *Prix du billet :*
+  👉 *000 USD par passager*
+  👉 *000 USD × 0 passagers*
+
+*Franchise bagages* 🧳
+       (par passager)
+ ✅ 1 bagage en soute *23 kg*
+ ✅ 1 bagage à main *8 kg*
+
+*Présélection de siège* 💺
+ ✅ Sièges standards*
+  *(Sous réserve de disponibilité)
+
+*Conditions du billet* ⚠️
+ 👇Pénalités par personne👇
+▪️ Modification : 000$*
+     *(+ différence tarifaire)
+▪️ *Annulation :*
+    👉*Non remboursable*❗
+▪️ *Non-présentation : Totalose*
+
+▬▬▬▬▬▬▬▬
+
+🟦 *Tarif Eco-Flex* 🎫
+💳 *Prix :*
+  👉 *0000 USD*
+
+*Franchise bagages* 🧳
+ ✅ 1 bagage en soute *23 kg*
+ ✅ 1 bagage à main *8 kg*
+
+*Présélection de siège* 💺
+ ✅ Sièges standards / préférentiels*
+  *(Sous réserve de disponibilité)
+
+*Conditions du billet* ⚠️
+▪️ Modification : 75$*
+   *(+ différence tarifaire)
+▪️ Annulation : 150$
+▪️ Non-présentation : Totalose
+
+▬▬▬▬▬▬▬▬
+
+👉*Merci de répondre directement à ce message WhatsApp en précisant le tarif retenu pour confirmer l'émission du billet*
+
+🟥 Tarif Eco-Lite / 🟩 Tarif Eco-Classique / 🟦 Tarif Eco-Flex
+
+*Notes importantes ❗*
+▪️ Les tarifs sont susceptibles d'évoluer sans préavis tant que les billets n'ont pas été émis.
+▪️ Les sièges, tarifs et conditions ne sont garantis qu'après l'émission des billets.
+
+▬▬▬▬▬▬▬▬
+
+ 🛟 *EL AL Protect* 💳
+   👍 (Assurance annulation du billet) 👍
+   👉 *000 USD par passager*
+   👉 *00 USD × 2 passagers**
+Permet l'annulation du voyage jusqu'à 72 heures avant le décollage depuis Israël et la conversion de la valeur de votre/vos billet(s) en bon d'avoir (sous déduction de 75 / 100 / 125 / 150 USD de frais de dossier par passager), valable pour de futurs vols EL AL (par vous-même ou toute personne désignée).
+🫷 *Avertissement important :* 🛑
+* Doit être souscrit au moment de l'émission du billet ❗️
+* Si l'avis d'annulation est reçu moins de 72 heures avant le départ d'Israël, les conditions d'annulation standard détaillées ci-dessous s'appliqueront ❗
+* Le tarif Eco-Lite ne donne *pas* droit à la souscription de l'assurance annulation « EL AL Protect », contrairement aux autres tarifs ci-dessus ❗️
+
+▬▬▬▬▬▬▬▬
+
+*⏱️ Date limite d'émission* ⌛
+🟥 🟩 🟦
+⏰ *Émission immédiate = Aujourd'hui* ‼️
+⏳*Sous 24 / 48 / 72 heures* ❗
+​👉*Dim 00 mois | HH:MM*
+
+Merci de répondre à ce message WhatsApp avec votre accord pour l'émission de votre/vos billet(s) conformément à la proposition ci-dessus — ce qui vaudra acceptation de l'offre avant l'échéance indiquée.
+
+✅ Pour finaliser votre réservation et émettre le billet :
+Répondez directement à ce message en précisant :
+1️⃣ Le tarif que vous avez choisi
+2️⃣ Les options supplémentaires que vous souhaitez inclure
+
+👉 *Votre réponse vaut acceptation de l'itinéraire et des conditions tarifaires.*
+
+Merci beaucoup,
+Cordialement,
 Gad Elnekave
-Sincerely Yours
-🏢 American Express Global Business Travel
-📞 Mob. 972-54-5727055
-✉️ gad@gbtil.co.il`
+
+
+🏢 American Express Global Business Travel Israel
+📞 Mobile : +972-54-5727055
+✉️ Email : gad@gbtil.co.il`
+  }
 };
+
 
 import {
   isSyncConfigured,
@@ -687,8 +986,26 @@ export function loadTemplate(category, lang) {
     const saved = window.localStorage.getItem(storageKey(category, lang));
     // For built-in `flight`, ignore a cached value if it carries the old
     // pre-fix structure — we'd rather render the up-to-date default than the
-    // broken save. Custom categories are always honoured as-is.
+    // broken save. Custom categories are always honoured as-is, except for
+    // the EN-duplicate FR row check below.
     if (saved !== null && !(category === "flight" && isOutdatedFlightTemplate(saved))) {
+      // Multi Airfare Quote — the Supabase fr row Gad uploaded today is a
+      // byte-for-byte copy of the en row (a placeholder, not an authored
+      // French translation). When we detect this duplicate, fall through
+      // to the DEFAULT_TEMPLATES.fr fallback (built from Gad's FR Standard
+      // voice). Once Gad authors a real FR copy in Admin, his content
+      // will diverge from en and this branch becomes a no-op automatically.
+      if (
+        category === "custom_mp3smmmgw4p5" &&
+        lang === "fr" &&
+        DEFAULT_TEMPLATES[category] &&
+        DEFAULT_TEMPLATES[category].fr
+      ) {
+        const enRow = window.localStorage.getItem(storageKey(category, "en"));
+        if (enRow !== null && enRow === saved) {
+          return DEFAULT_TEMPLATES[category].fr;
+        }
+      }
       return migrateSeatPlaceholder(migrateFlightClassPlaceholder(saved));
     }
   } catch (e) {

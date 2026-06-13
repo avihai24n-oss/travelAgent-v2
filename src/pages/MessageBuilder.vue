@@ -389,18 +389,6 @@
               :label="selectedLang === 'he' ? 'תבנית' : selectedLang === 'fr' ? 'Modèle' : 'Template'"
               @input="onTemplateCategoryChange"
             />
-            <button
-              v-if="selectedLang === 'en'"
-              type="button"
-              class="multi-fare-toggle"
-              :class="{ active: useMultiFareMode }"
-              @click="onToggleMultiFare"
-            >
-              <span class="multi-fare-toggle-icon">{{ useMultiFareMode ? '✓' : '🎫' }}</span>
-              <span class="multi-fare-toggle-label">
-                {{ useMultiFareMode ? 'Standard quote' : 'Multi-fare quote (OPTIMA / COMFORT / FLEX)' }}
-              </span>
-            </button>
             <WhatsAppPhonePreview
               :text="whatsappMessage"
               :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
@@ -574,7 +562,6 @@ import { airports } from "src/assets/iata";
 import {
   loadTemplate,
   FLIGHT_ITEM_KEYS,
-  MULTI_FARE_TEMPLATES,
   CATEGORIES,
   loadCustomCategories
 } from "src/assets/defaultTemplates.js";
@@ -635,7 +622,6 @@ export default {
       whatsappMessage: "",
       darkMode: false,
       ticketIssuanceDeadline: "",
-      useMultiFareMode: false,
       // Pilot: lets Gad pick which template fills with the Amadeus PNR data.
       // "flight" is the in-code default; other entries come from the custom
       // categories he created in Admin (synced from Supabase on app boot).
@@ -828,17 +814,7 @@ export default {
         })
         .join("\n");
     },
-    onToggleMultiFare() {
-      this.useMultiFareMode = !this.useMultiFareMode;
-      this.onPreview();
-    },
     onTemplateCategoryChange() {
-      // Multi-fare toggle only makes sense for the in-code `flight` template;
-      // reset it when switching away so the picker's choice fully drives the
-      // preview.
-      if (this.selectedTemplateCategory !== "flight") {
-        this.useMultiFareMode = false;
-      }
       this.savePickerChoice(this.selectedLang, this.selectedTemplateCategory);
       this.sectionToggles = this.loadSectionToggles(
         this.selectedLang,
@@ -864,7 +840,9 @@ export default {
     groupHeaderLabel(group) {
       const labels = {
         preferences: "🧑‍✈️ Per-flight preferences",
-        addons: "🟦 Optional Add-Ons"
+        addons: "🟦 Optional Add-Ons",
+        // Multi Airfare specific: 5 tier sub-toggles live under this header.
+        airfare_options: "🎫 Airfare options (Multi Airfare)"
       };
       return labels[group] || "";
     },
@@ -910,13 +888,13 @@ export default {
       return `sectionToggles:${lang}:${category}`;
     },
     loadSectionToggles(lang, category) {
-      // Always start from an "all keys explicitly false" baseline so the
-      // q-checkbox v-model has a definitive boolean — `undefined` renders
-      // as Quasar's indeterminate "-" state, which we don't want here.
-      // Any persisted value layers on top.
+      // Baseline initialization. Toggles with `defaultOn: true` start checked
+      // (e.g. Multi Airfare's 5 tier toggles, which ARE the core content of
+      // the quote — without them the picker choice makes no sense). All
+      // others start unchecked. Any persisted user choice overlays on top.
       const base = {};
       for (const sec of OPTIONAL_SECTIONS[lang] || []) {
-        base[sec.key] = false;
+        base[sec.key] = sec.defaultOn === true;
       }
       try {
         const raw = window.localStorage.getItem(
@@ -1035,24 +1013,27 @@ export default {
     },
     buildFromCustomTemplate(flightsTxt) {
       const langKey = this.selectedLang;
-      // Multi-fare toggle still wins when active (English `flight` only),
-      // otherwise we load whichever category the new picker selected. For
-      // `flight` this is the in-code default; for custom categories it's the
-      // Supabase row Gad authored.
-      const multiFareTpl =
-        this.useMultiFareMode && MULTI_FARE_TEMPLATES[langKey];
-      let tpl =
-        multiFareTpl || loadTemplate(this.selectedTemplateCategory, langKey);
+      // Load whichever category the picker selected. For `flight` /
+      // `flights_only` this is the in-code default; for custom categories
+      // it's the Supabase row Gad authored.
+      let tpl = loadTemplate(this.selectedTemplateCategory, langKey);
       if (!tpl) return "";
       // Custom (Gad-authored) categories use his own manual placeholders
       // ("שם הנוסע", "(LY,XX)", a blank itinerary area, etc.). Run them
       // through the auto-fill engine so they end up looking like our
       // standard {{...}} template — the Supabase row stays untouched, this
-      // transformation lives only in the render path. The built-in `flight`
-      // template is already in {{...}} form so skipping autofill for it
-      // saves a regex pass and avoids any accidental double-substitution.
-      if (this.selectedTemplateCategory !== "flight" && !multiFareTpl) {
-        tpl = autofillTemplate(tpl, langKey, this.sectionToggles);
+      // transformation lives only in the render path. Built-in templates
+      // (`flight`, `flights_only`) are already in {{...}} form so skipping
+      // autofill for them saves a regex pass and avoids the engine's
+      // flight-block injection from duplicating the in-template blocks.
+      const BUILT_IN_TEMPLATE_KEYS = ["flight", "flights_only"];
+      if (!BUILT_IN_TEMPLATE_KEYS.includes(this.selectedTemplateCategory)) {
+        tpl = autofillTemplate(
+          tpl,
+          langKey,
+          this.sectionToggles,
+          this.selectedTemplateCategory
+        );
       }
 
       const customerName = this.capitalizeFirstLetter(
@@ -2129,7 +2110,17 @@ export default {
       const cat = this.selectedTemplateCategory;
       const lang = this.selectedLang;
       if (!SECTION_SUPPORT[cat] || !SECTION_SUPPORT[cat][lang]) return [];
-      return OPTIONAL_SECTIONS[lang] || [];
+      // Filter by category scope. Toggles with `categories: [...]` only
+      // appear for listed categories; `notCategories: [...]` hides them for
+      // listed categories. This keeps the Standard quote's flat list of
+      // toggles unchanged while letting Multi Airfare show its 5 tier
+      // toggles plus the shared (preferences / codeshare / mixed-cabin /
+      // EL AL Protect / closing) entries.
+      return (OPTIONAL_SECTIONS[lang] || []).filter(sec => {
+        if (sec.categories && !sec.categories.includes(cat)) return false;
+        if (sec.notCategories && sec.notCategories.includes(cat)) return false;
+        return true;
+      });
     },
     // How many optional sections are currently ON. Shown as a badge in
     // the accordion header so Gad can tell at a glance how customized the
@@ -2159,20 +2150,67 @@ export default {
       }
       return out;
     },
-    // Built-in `flight` first, then every custom category Gad created in
-    // Admin (label uses the current preview language; custom categories
-    // only carry one label string so we fall back gracefully).
+    // Picker options, ordered:
+    //   1. Standard Airfare Quote (custom_mpsx5w8le42j) — pinned to top
+    //      with a ⭐ prefix because Gad uses it as his primary template.
+    //   2. Flights Only (flights_only) — pinned second, in-code itinerary.
+    //   3. Multi Airfare Quote (custom_mp3smmmgw4p5) — pinned third.
+    //   4. Everything else (Gad's other Supabase categories) follows.
+    //
+    // The legacy in-code "Flight Quote" (`flight`) is intentionally
+    // hidden from the picker — Gad's Supabase Standard Airfare Quote
+    // replaced it as the default. The `flight` template still lives in
+    // DEFAULT_TEMPLATES (it's the fallback for languages that haven't
+    // adopted the Standard yet), but agents shouldn't reach for it.
+    //
+    // Each visible entry gets an icon prefix from CATEGORY_ICONS so the
+    // dropdown reads at a glance.
     categoryOptions() {
       const lang = this.selectedLang;
-      const builtIn = CATEGORIES.map(c => ({
-        value: c.key,
-        label: (c.label && (c.label[lang] || c.label.en || c.label.he)) || c.key
-      }));
-      const custom = (this.availableCustomCategories || []).map(c => ({
-        value: c.key,
-        label: (c.label && (c.label[lang] || c.label.en || c.label.he)) || c.key
-      }));
-      return [...builtIn, ...custom];
+      const labelOf = c => {
+        // "Flights Only" stays in English across all preview languages.
+        // It's an agent-facing UI label, not customer-facing content —
+        // Gad referred to it by its English name from day one.
+        if (c.key === "flights_only") return "Flights Only";
+        return (c.label && (c.label[lang] || c.label.en || c.label.he)) || c.key;
+      };
+      const HIDDEN = ["flight"];
+      const all = [
+        ...CATEGORIES
+          .filter(c => !HIDDEN.includes(c.key))
+          .map(c => ({ value: c.key, label: labelOf(c) })),
+        ...(this.availableCustomCategories || []).map(c => ({
+          value: c.key,
+          label: labelOf(c)
+        }))
+      ];
+      const PINNED = [
+        "custom_mpsx5w8le42j",   // ⭐ Standard Airfare Quote — primary
+        "flights_only",          // ✈️  Flights Only — in-code itinerary
+        "custom_mp3smmmgw4p5"    // 🎫 Multi Airfare Quote (Same flights)
+      ];
+      // Per-category dropdown icons. ⭐ pulls double duty as both the
+      // primary-template marker and Standard's icon. Other Supabase
+      // categories Gad adds later fall back to 📋.
+      const CATEGORY_ICONS = {
+        custom_mpsx5w8le42j: "⭐",
+        flights_only: "✈️",
+        custom_mp3smmmgw4p5: "🎫"
+      };
+      const pinned = [];
+      const rest = [];
+      for (const item of all) {
+        if (PINNED.includes(item.value)) pinned.push(item);
+        else rest.push(item);
+      }
+      pinned.sort(
+        (a, b) => PINNED.indexOf(a.value) - PINNED.indexOf(b.value)
+      );
+      const withIcon = item => ({
+        ...item,
+        label: (CATEGORY_ICONS[item.value] || "📋") + " " + item.label
+      });
+      return [...pinned.map(withIcon), ...rest.map(withIcon)];
     },
     translateBtnLabel() {
       switch (this.selectedLang) {
@@ -2578,6 +2616,33 @@ export default {
     selectedTemplateCategory() {
       if (this.tab === 'preview') {
         this.onPreview();
+      }
+    },
+    // Multi Airfare Eco-Lite cross-reference notice. The EL AL Protect
+    // block lists "the Eco-Lite fare does not entitle..." as one of its
+    // bullet points; that bullet only makes sense while Eco-Lite is part
+    // of the offer. When the user disables Eco-Lite, surface a one-shot
+    // toast so they can decide whether to also disable EL AL Protect (or
+    // keep it for the other two tiers). We never auto-hide either — the
+    // user owns the final composition.
+    "sectionToggles.tier_eco_lite"(newVal, oldVal) {
+      if (
+        oldVal === true &&
+        newVal === false &&
+        this.sectionToggles.addon_elal_protect === true
+      ) {
+        const messages = {
+          he: "אקו-לייט הוסר. שים לב: בלוק אלעל פרוטקט עדיין מזכיר אותו — שקול להסתיר אותו ידנית אם לא רלוונטי.",
+          en: "Eco-Lite removed. Note: the EL AL Protect block still references it — consider hiding it manually if no longer relevant.",
+          fr: "Eco-Lite retiré. Note : le bloc EL AL Protect le mentionne encore — pensez à le masquer manuellement s'il n'est plus pertinent."
+        };
+        this.$q.notify({
+          type: "info",
+          message: messages[this.selectedLang] || messages.en,
+          position: "top",
+          timeout: 6000,
+          actions: [{ label: "OK", color: "white" }]
+        });
       }
     },
     "data.travelers": {
@@ -3367,67 +3432,6 @@ body.body--dark .section-toggle-group {
   .section-toggles-list {
     display: flex !important;
   }
-}
-
-.multi-fare-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  width: 100%;
-  margin: 0 0 14px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  border: 1.5px dashed #94a3b8;
-  background: #f8fafc;
-  color: #1e293b;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-  font-family: inherit;
-}
-
-.multi-fare-toggle:hover {
-  background: #eff6ff;
-  border-color: #2563eb;
-}
-
-.multi-fare-toggle:active {
-  transform: scale(0.99);
-}
-
-.multi-fare-toggle.active {
-  background: linear-gradient(180deg, #2563eb, #1d4ed8);
-  color: #fff;
-  border-style: solid;
-  border-color: #1d4ed8;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
-}
-
-.multi-fare-toggle.active:hover {
-  background: linear-gradient(180deg, #1d4ed8, #1e40af);
-}
-
-.multi-fare-toggle-icon {
-  font-size: 18px;
-  line-height: 1;
-}
-
-.multi-fare-toggle-label {
-  flex: 1;
-  text-align: center;
-}
-
-body.body--dark .multi-fare-toggle {
-  background: #1e293b;
-  border-color: #475569;
-  color: #cbd5e1;
-}
-
-body.body--dark .multi-fare-toggle:hover {
-  background: #1e3a5f;
-  border-color: #3b82f6;
 }
 
 /* Destination picker dialog */

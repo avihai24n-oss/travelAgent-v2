@@ -201,6 +201,12 @@ const PATTERN_MAP = {
     // them, intended for first name / last name) becomes one bold token.
     { match: /Dear \* \*,/g, replace: "Dear *{{CUSTOMER_NAME}}*," },
 
+    // Customer name — Multi Airfare Quote variant. Gad drops the "Dear"
+    // prefix in that template and opens with bare "* *, Shalom!". Anchored
+    // with `^` + the multiline flag so we only match the line-leading
+    // greeting and never an in-prose "* *,".
+    { match: /^\* \*, Shalom/m, replace: "*{{CUSTOMER_NAME}}*, Shalom" },
+
     // Ticket-issuance (top legend) — "*Sun / Mon / Tue / Wed / Thu / Fri |
     // 00 Month | HH:MM*" gets replaced with the actual issuance string.
     { match: /\*Sun \/ Mon \/ Tue \/ Wed \/ Thu \/ Fri \| 00 Month \| HH:MM\*/g, replace: "*{{TICKET_ISSUANCE}}*" },
@@ -261,7 +267,50 @@ const PATTERN_MAP = {
     {
       match: /your ticket\(s\)/g,
       replace: "{{TICKET_WORD}}"
-    }
+    },
+
+    // ─── MTI - Multi Tickets Itinerary (custom_mpsyddkhr80a/en) ───
+    // Gad authored a separate template for multi-ticket itineraries
+    // (different airlines / separate one-way tickets that together
+    // make the journey). It reuses the same {{...}} pipeline but the
+    // stub strings differ from the Standard Airfare Quote — those
+    // are spelled out here.
+    //
+    // Each MTI pattern matches a literal stub Gad typed in the row
+    // (e.g. "*Xxxxxxx Shalom!*"); the Standard patterns above never
+    // match these stubs, so the two templates can coexist without
+    // conflict in PATTERN_MAP[en].
+
+    // Greeting — "*Xxxxxxx Shalom!*". The X+x sequence is Gad's
+    // capital-then-lowercase name stub; we match any length so a
+    // future edit to "Xxxx" or "Xxxxxxxx" still resolves.
+    {
+      match: /\*X[Xx]+\s+Shalom!\*/g,
+      replace: "*{{CUSTOMER_NAME}} Shalom!*"
+    },
+
+    // Compact ticket-issuance — "*Day 00Mnn | 0 PM*". MTI uses this
+    // short legend instead of the Standard's "Sun / Mon / Tue / Wed
+    // / Thu / Fri | 00 Month | HH:MM*" weekday list.
+    {
+      match: /\*Day 00Mnn \| 0 PM\*/g,
+      replace: "*{{TICKET_ISSUANCE}}*"
+    },
+
+    // Traveler-name placeholder inside the body opener —
+    // "(👤Xxxxx Xxxxx)". MTI bolds the name directly after a single
+    // person icon, different from the Standard's traveler-icon list.
+    {
+      match: /\(👤X[Xx]+\s+X[Xx]+\)/g,
+      replace: "(👤{{CUSTOMER_NAME}})"
+    },
+
+    // 3-airline code legend — "(LY, XX, XX)". MTI's multi-carrier
+    // header (since each ticket can be a different airline). The
+    // Standard's "(LY, XX)" pattern above needs the closing paren
+    // right after the second XX, so it won't accidentally fire on
+    // this 3-code form.
+    { match: /\(LY,\s*XX,\s*XX\)/g, replace: "({{AIRLINE_CODE}})" }
   ],
   fr: [
     // Gad's Standard Airfare Quote (fr) — patterns aligned to his exact
@@ -270,6 +319,13 @@ const PATTERN_MAP = {
     // Customer name — "Cher/Chère * *," (two empty bolds with a space
     // between them, intended for first / last name) becomes one bold.
     { match: /Cher\/Chère \* \*,/g, replace: "Cher/Chère *{{CUSTOMER_NAME}}*," },
+
+    // Customer name — Multi Airfare Quote variant. The FR Multi Airfare
+    // drops the "Cher/Chère" prefix (mirroring the EN Multi Airfare's
+    // bare "* *, Shalom!" cadence) and opens with "* *, Shalom ❗️".
+    // Anchored with `^` + the multiline flag so we only match the
+    // line-leading greeting and never an in-prose "* *,".
+    { match: /^\* \*, Shalom/m, replace: "*{{CUSTOMER_NAME}}*, Shalom" },
 
     // Ticket-issuance (top legend) — "*Dim / Lun / Mar / Mer / Jeu / Ven |
     // 00 mois | HH:MM*"
@@ -411,13 +467,17 @@ export const OPTIONAL_SECTIONS = {
       label: "שילוב מחלקות בטיסות",
       pattern: /\n▔▔▔▔▔▔▔\n\n🔀 שילוב מחלקות[\s\S]*?(?=\n▬▬▬▬)/u
     },
+    // ─── Standard-only toggles (scoped via notCategories) ───
+    // The Multi Airfare quote replaces these areas with its 3-tier block,
+    // so these toggles are hidden when the active category is Multi.
     {
       key: "extended_caveat",
       icon: "⚠️",
       label: "לתשומת לבך מורחב (3 שורות)",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n🛑 \*\*לתשומת לבך:\*\n(?:\*[^\n]*\n){2,}/u
     },
-    // ─── תוספות אופציונליות — 4 תת־סקציות ───
+    // ─── תוספות אופציונליות — 4 תת־סקציות (Standard's 🟦 block) ───
     // Each sub-toggle controls a single add-on within Gad's 🟦 block.
     // The 🟦 header + leading ▔ divider are kept automatically when ANY of
     // the four is on (see ADDON_KEYS handling below); when ALL are off the
@@ -427,6 +487,7 @@ export const OPTIONAL_SECTIONS = {
       icon: "🪑",
       label: "מושב מועדף",
       group: "addons",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n💺 \*מושב\/ים מועדפים\*💳\n/u
     },
     {
@@ -434,6 +495,7 @@ export const OPTIONAL_SECTIONS = {
       icon: "⭐",
       label: "מושב ספייס",
       group: "addons",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n💺 \*מושב\/י ״ספייס״\*\*💳\n[\s\S]*?(?=\n\n🧳 \*מזוודה|\n\n? 🛟 \*אלעל|\n▬▬▬▬)/u
     },
     {
@@ -441,8 +503,13 @@ export const OPTIONAL_SECTIONS = {
       icon: "🛄",
       label: "מזוודה נוספת",
       group: "addons",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n🧳 \*מזוודה נוספת\*💳\n[\s\S]*?(?=\n\n? 🛟 \*אלעל|\n▬▬▬▬)/u
     },
+    // EL AL Protect — applies to BOTH Standard (under the 🟦 add-ons block)
+    // and Multi Airfare (standalone section after the 3-tier block). The
+    // same pattern matches both positions because they both terminate at
+    // the next ▬▬▬▬ divider.
     {
       key: "addon_elal_protect",
       icon: "🛡️",
@@ -450,23 +517,26 @@ export const OPTIONAL_SECTIONS = {
       group: "addons",
       pattern: /\n 🛟 \*אלעל פרוטקט\*💳\n[\s\S]*?(?=\n▬▬▬▬)/u
     },
-    // ─── חזרה למבנה הרגיל ───
+    // ─── חזרה למבנה הרגיל (Standard-only) ───
     {
       key: "detailed_baggage",
       icon: "🧳",
       label: "כבודה מורחבת (4 אפשרויות)",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: / 🧳 \*כבודה לנוסע:\*[\s\S]*?(?=\n\n? 💺 \*הושבה מראש:\*|\n▬▬▬▬)/u
     },
     {
       key: "detailed_seats",
       icon: "💺",
       label: "הושבה מראש מורחבת",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: / 💺 \*הושבה מראש:\*[\s\S]*?(?=\n▬▬▬▬)/u
     },
     {
       key: "tariff_tier_second",
       icon: "💸",
       label: "תנאי כרטיס: +72h / -72h",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n\*תנאי הכרטיסים\*⚠️\n[\s\S]*?(?=\n▬▬▬▬)/u
     },
     {
@@ -480,6 +550,56 @@ export const OPTIONAL_SECTIONS = {
       icon: "✅",
       label: "הוראת סיום הזמנה",
       pattern: /\n✅ לסיום ההזמנה[\s\S]*?(?=\n👈\*קבלת המענה)/u
+    },
+    // ─── אפשרויות תעריף — Multi Airfare 3-tier block (5 sub-toggles) ───
+    // Each tier strips its own block PLUS the trailing ▬▬▬▬ divider, so
+    // the section flows cleanly when one or more tiers are disabled. All
+    // five default to ON because they ARE the core Multi Airfare content
+    // (without them the picker choice "Multi Airfare" makes no sense).
+    {
+      key: "tier_eco_lite",
+      icon: "🟥",
+      label: "שכבת אקו-לייט (Eco-Lite)",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /🟥 \*תעריף אקו-לייט\*[\s\S]*?\n▬▬▬▬+\n/u
+    },
+    {
+      key: "tier_eco_classic",
+      icon: "🟩",
+      label: "שכבת אקו-קלאסיק (Eco-Classic)",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /🟩 \*תעריף אקו-קלאסיק\*[\s\S]*?\n▬▬▬▬+\n/u
+    },
+    {
+      key: "tier_eco_flex",
+      icon: "🟦",
+      label: "שכבת אקו-פלקס (Eco-Flex)",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /🟦 \*תעריף אקו-פלקס\*[\s\S]*?\n▬▬▬▬+\n/u
+    },
+    {
+      key: "selection_callout",
+      icon: "👈",
+      label: "קריאה לבחירת תעריף",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /👈\*נא להשיב[\s\S]*?(?=\n+\*הערות חשובות)/u
+    },
+    {
+      key: "important_notes",
+      icon: "❗",
+      label: "הערות חשובות (תעריפים נתונים לשינוי)",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /\*הערות חשובות ❗\*\n(?:▪️[^\n]*\n)+/u
     }
   ],
   // ─── English (aligned to Gad's custom_mpsx5w8le42j/en template) ───
@@ -529,18 +649,21 @@ export const OPTIONAL_SECTIONS = {
       label: "Mixed Cabin Itinerary",
       pattern: /\n🔀 Mixed Cabin Itinerary[\s\S]*?(?=\n+▬▬▬▬)/u
     },
+    // ─── Standard-only toggles (scoped via notCategories) ───
     {
       key: "extended_caveat",
       icon: "⚠️",
       label: "Please Note (3 caveats)",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n🛑 \*\*Please Note:\*\n(?:\*[^\n]*\n){2,}/u
     },
-    // ─── group: addons — 🟦 "Optional Add-Ons" container ───
+    // ─── group: addons — 🟦 "Optional Add-Ons" container (Standard) ───
     {
       key: "addon_preferred_seats",
       icon: "🪑",
       label: "Preferred Seats",
       group: "addons",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n💺 \*Preferred Seats\* 💳\n/u
     },
     {
@@ -548,6 +671,7 @@ export const OPTIONAL_SECTIONS = {
       icon: "⭐",
       label: "\"Space\" Seats",
       group: "addons",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n💺 \*"Space" Seats\*\* 💳\n[\s\S]*?(?=\n+▔▔▔▔|\n+▬▬▬▬)/u
     },
     {
@@ -555,8 +679,12 @@ export const OPTIONAL_SECTIONS = {
       icon: "🛄",
       label: "Additional Baggage",
       group: "addons",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n🧳 \*Additional Baggage\* 💳\n[\s\S]*?(?=\n+▔▔▔▔|\n+▬▬▬▬)/u
     },
+    // EL AL Protect — both categories. Multi Airfare positions it
+    // standalone after the AIRFARE OPTIONS block; same divider-terminated
+    // pattern matches both layouts.
     {
       key: "addon_elal_protect",
       icon: "🛡️",
@@ -564,28 +692,29 @@ export const OPTIONAL_SECTIONS = {
       group: "addons",
       pattern: /\n 🛟 \*EL AL Protect\* 💳\n[\s\S]*?(?=\n+▬▬▬▬)/u
     },
-    // ─── stand-alone: detailed baggage ───
+    // ─── Standard-only: detailed baggage / seats / USA restrictions ───
     {
       key: "detailed_baggage",
       icon: "🧳",
       label: "Detailed baggage allowance",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /🧳 \*Baggage allowance\*[\s\S]*?(?=\n+▔▔▔▔|\n+▬▬▬▬)/u
     },
-    // ─── stand-alone: detailed preselected seats ───
     {
       key: "detailed_seats",
       icon: "💺",
       label: "Detailed preselected seats",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /💺\*Preselected Seats:\*[\s\S]*?(?=\n+▬▬▬▬)/u
     },
-    // ─── stand-alone: USA Tkts restrictions (analog of Hebrew +72h/-72h) ───
     {
       key: "tariff_tier_second",
       icon: "💸",
       label: "USA Tkts. Restrictions (48h)",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n⚠️ \*USA Tkts\. Restrictions\*[\s\S]*?(?=\n+▔▔▔▔)/u
     },
-    // ─── issuance — single toggle removes both timing lines ───
+    // ─── issuance — single toggle removes both timing lines (both cats) ───
     {
       key: "extended_issuance_options",
       icon: "⏰",
@@ -598,6 +727,53 @@ export const OPTIONAL_SECTIONS = {
       icon: "✅",
       label: "Completion instructions (3 paragraphs)",
       pattern: /\n Thank you for replying[\s\S]*?(?=\n\nThank you very much)/u
+    },
+    // ─── AIRFARE OPTIONS — Multi Airfare 3-tier block (5 sub-toggles) ───
+    // Default ON. Each tier strips its own block + trailing ▬▬▬▬ divider.
+    {
+      key: "tier_eco_lite",
+      icon: "🟥",
+      label: "Eco-Lite tier",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /🟥 \*Eco-Lite Rate\*[\s\S]*?\n▬▬▬▬+\n/u
+    },
+    {
+      key: "tier_eco_classic",
+      icon: "🟩",
+      label: "Eco-Classic tier",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /🟩 \*Eco-Classic Rate\*[\s\S]*?\n▬▬▬▬+\n/u
+    },
+    {
+      key: "tier_eco_flex",
+      icon: "🟦",
+      label: "Eco-Flex tier",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /🟦 \*Eco-Flex Rate\*[\s\S]*?\n▬▬▬▬+\n/u
+    },
+    {
+      key: "selection_callout",
+      icon: "👉",
+      label: "Fare-selection callout",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /👉\*Kindly reply[\s\S]*?(?=\n+\*Important Notes)/u
+    },
+    {
+      key: "important_notes",
+      icon: "❗",
+      label: "Important Notes (fares subject to change)",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /\*Important Notes ❗\*\n(?:▪️[^\n]*\n)+/u
     }
   ],
   // ─── French (aligned to Gad's custom_mpsx5w8le42j/fr template) ───
@@ -648,18 +824,21 @@ export const OPTIONAL_SECTIONS = {
       label: "Combinaison de classes",
       pattern: /\n🔀 Combinaison de classes[\s\S]*?(?=\n+▬▬▬▬)/u
     },
+    // ─── Standard-only toggles (scoped via notCategories) ───
     {
       key: "extended_caveat",
       icon: "⚠️",
       label: "À noter (3 mentions)",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n🛑 \*\*À noter :\*\n(?:\*[^\n]*\n){2,}/u
     },
-    // ─── group: addons — 🟦 "Options supplémentaires" container ───
+    // ─── group: addons — 🟦 "Options supplémentaires" container (Standard) ───
     {
       key: "addon_preferred_seats",
       icon: "🪑",
       label: "Sièges préférentiels",
       group: "addons",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n💺 \*Sièges préférentiels\* 💳\n/u
     },
     {
@@ -667,6 +846,7 @@ export const OPTIONAL_SECTIONS = {
       icon: "⭐",
       label: "Sièges « Space »",
       group: "addons",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n💺 \*Sièges « Space »\*\* 💳\n[\s\S]*?(?=\n+🧳 \*Bagage supplémentaire|\n+ 🛟 \*EL AL|\n+▬▬▬▬)/u
     },
     {
@@ -674,8 +854,10 @@ export const OPTIONAL_SECTIONS = {
       icon: "🛄",
       label: "Bagage supplémentaire",
       group: "addons",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\n🧳 \*Bagage supplémentaire\* 💳\n[\s\S]*?(?=\n+ 🛟 \*EL AL|\n+▬▬▬▬)/u
     },
+    // EL AL Protect — both categories (Standard inside 🟦 block; Multi standalone).
     {
       key: "addon_elal_protect",
       icon: "🛡️",
@@ -683,18 +865,19 @@ export const OPTIONAL_SECTIONS = {
       group: "addons",
       pattern: /\n 🛟 \*EL AL Protect\* 💳\n[\s\S]*?(?=\n+▬▬▬▬)/u
     },
-    // ─── stand-alone: detailed baggage ───
+    // ─── Standard-only: detailed baggage / seats ───
     {
       key: "detailed_baggage",
       icon: "🧳",
       label: "Bagages par passager (4 options)",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /🧳 \*Bagages par passager :\*[\s\S]*?(?=\n+\*Preselection|\n+▬▬▬▬)/u
     },
-    // ─── stand-alone: detailed preselected seats ───
     {
       key: "detailed_seats",
       icon: "💺",
       label: "Présélection sièges détaillée",
+      notCategories: ["custom_mp3smmmgw4p5"],
       pattern: /\*Preselection Sièges\*💺[\s\S]*?(?=\n+▬▬▬▬)/u
     },
     // ─── issuance — single toggle removes both timing lines ───
@@ -710,6 +893,53 @@ export const OPTIONAL_SECTIONS = {
       icon: "✅",
       label: "Instructions de finalisation",
       pattern: /\n✅ Pour finaliser[\s\S]*?(?=\n\n👉 \*Votre réponse)/u
+    },
+    // ─── AIRFARE OPTIONS — Multi Airfare 3-tier block (5 sub-toggles) ───
+    // Default ON. Each tier strips its own block + trailing ▬▬▬▬ divider.
+    {
+      key: "tier_eco_lite",
+      icon: "🟥",
+      label: "Tarif Eco-Lite",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /🟥 \*Tarif Eco-Lite\*[\s\S]*?\n▬▬▬▬+\n/u
+    },
+    {
+      key: "tier_eco_classic",
+      icon: "🟩",
+      label: "Tarif Eco-Classique",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /🟩 \*Tarif Eco-Classique\*[\s\S]*?\n▬▬▬▬+\n/u
+    },
+    {
+      key: "tier_eco_flex",
+      icon: "🟦",
+      label: "Tarif Eco-Flex",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /🟦 \*Tarif Eco-Flex\*[\s\S]*?\n▬▬▬▬+\n/u
+    },
+    {
+      key: "selection_callout",
+      icon: "👉",
+      label: "Appel à la sélection du tarif",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /👉\*Merci de répondre directement[\s\S]*?(?=\n+\*Notes importantes)/u
+    },
+    {
+      key: "important_notes",
+      icon: "❗",
+      label: "Notes importantes (tarifs susceptibles d'évoluer)",
+      group: "airfare_options",
+      categories: ["custom_mp3smmmgw4p5"],
+      defaultOn: true,
+      pattern: /\*Notes importantes ❗\*\n(?:▪️[^\n]*\n)+/u
     }
   ]
 };
@@ -743,7 +973,16 @@ const ADDONS_HEADER_PATTERNS = {
 export const SECTION_SUPPORT = {
   // Standard Airfare Quote — supported in he + en + fr (Gad's content
   // exists in all three).
-  custom_mpsx5w8le42j: { he: true, en: true, fr: true }
+  custom_mpsx5w8le42j: { he: true, en: true, fr: true },
+  // Multi Airfare Quote (Same flights) — EN is Gad-authored in Supabase.
+  // HE has no Supabase row yet — served by the in-code fallback in
+  // DEFAULT_TEMPLATES.custom_mp3smmmgw4p5.he (built from Gad's HE Standard
+  // voice). The FR Supabase row is byte-identical to EN today (placeholder);
+  // loadTemplate detects this duplicate and serves the FR fallback in
+  // DEFAULT_TEMPLATES.custom_mp3smmmgw4p5.fr instead. Once Gad authors his
+  // own FR row in Admin, his copy will diverge from EN and override the
+  // fallback automatically. Full authoring rationale in docs/QUOTE_STYLE_GUIDE.md.
+  custom_mp3smmmgw4p5: { he: true, en: true, fr: true }
 };
 
 // Public entry point.
@@ -755,7 +994,12 @@ export const SECTION_SUPPORT = {
 // removes it). The caller then runs the result through the existing
 // expandFlightBlock + replace pipeline. Idempotent: feeding the output
 // back in is a no-op (regexes don't match the new {{...}} form).
-export function autofillTemplate(tpl, lang, toggles) {
+//
+// `category` (optional) — used to filter OPTIONAL_SECTIONS entries:
+// entries with `categories: [...]` only apply when the current category
+// is listed; entries with `notCategories: [...]` are skipped for the
+// listed categories. When omitted, all entries apply (legacy behavior).
+export function autofillTemplate(tpl, lang, toggles, category) {
   if (typeof tpl !== "string" || !tpl) return tpl;
   const langKey = lang && PATTERN_MAP[lang] ? lang : "en";
 
@@ -764,6 +1008,15 @@ export function autofillTemplate(tpl, lang, toggles) {
   // the rest of the pipeline (renderer included) only ever sees LF.
   let out = tpl.replace(/\r\n?/g, "\n");
 
+  // 0. Divider normalization: Gad's EN Multi Airfare row uses dash lines
+  //    (`------------------------`) as section separators while the rest
+  //    of his quotes use bar lines (`▬▬▬▬▬▬▬▬`). The HE/FR fallbacks we
+  //    authored already use bars. Normalize dash dividers to bars at the
+  //    very start so every downstream regex (OPTIONAL_SECTIONS patterns,
+  //    cleanup pass, etc.) can rely on a single divider style — and the
+  //    rendered output stays visually consistent across all 3 languages.
+  out = out.replace(/^-{15,}$/gm, "▬▬▬▬▬▬▬▬");
+
   // 1. Strip optional sections that are OFF. Done BEFORE injection /
   //    pattern replacement so the section patterns can rely on the original
   //    shape of the template (Gad's literal text and dividers).
@@ -771,11 +1024,25 @@ export function autofillTemplate(tpl, lang, toggles) {
   //    Entries WITHOUT a `pattern` (e.g. visa_requirements — an injection-
   //    style toggle that adds content rather than stripping) are skipped
   //    here; their effect is applied later in the consumer pipeline.
+  //
+  //    Each entry can opt into two extra fields:
+  //      - `defaultOn: true` — flips the default state. The section is
+  //         KEPT unless the toggle is explicitly `false`. Used for tier
+  //         blocks in the Multi Airfare AIRFARE OPTIONS section, which
+  //         should render by default.
+  //      - `categories` / `notCategories` — scope the entry to (or away
+  //         from) specific template categories. When the current category
+  //         doesn't match, the entry is skipped entirely (no strip).
   const sections = OPTIONAL_SECTIONS[langKey] || [];
   const onMap = toggles || {};
   for (const sec of sections) {
     if (!sec.pattern) continue;
-    if (onMap[sec.key] === true) continue;
+    if (sec.categories && category && !sec.categories.includes(category)) continue;
+    if (sec.notCategories && category && sec.notCategories.includes(category)) continue;
+    const shouldStrip = sec.defaultOn
+      ? onMap[sec.key] === false
+      : onMap[sec.key] !== true;
+    if (!shouldStrip) continue;
     out = out.replace(sec.pattern, "");
   }
 
