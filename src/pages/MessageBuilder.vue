@@ -107,6 +107,17 @@
               @click="openDestinationPicker"
               no-caps
             />
+            <q-btn
+              :label="studioBtnLabel"
+              icon="smart_toy"
+              color="deep-purple-6"
+              outline
+              size="lg"
+              class="studio-btn"
+              :disable="!data.smartAmadeusCode || apiStatus === 'offline'"
+              @click="onStartStudio"
+              no-caps
+            />
             <q-chip
               :color="apiStatusColor"
               text-color="white"
@@ -389,13 +400,39 @@
               :label="selectedLang === 'he' ? 'תבנית' : selectedLang === 'fr' ? 'Modèle' : 'Template'"
               @input="onTemplateCategoryChange"
             />
+            <SpecialAgentPanel
+              v-if="specialMode"
+              :source-text="whatsappMessage"
+              :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
+              :lang="selectedLang"
+              :flight-summary="flightSummaryForAgent"
+              :contact-name="previewContactName"
+              :mode="studioMode ? 'studio' : 'edit'"
+              :itinerary-text="studioItinerary"
+              :known-details="studioKnownDetails"
+              @update:text="whatsappMessage = $event"
+              @close="onCloseAgent"
+            />
             <WhatsAppPhonePreview
+              v-else
               :text="whatsappMessage"
               :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
               :contact-name="previewContactName"
               @update:text="whatsappMessage = $event"
             />
             <div class="preview-actions">
+              <q-btn
+                v-if="!specialMode"
+                @click="specialMode = true; studioMode = false"
+                class="special-btn"
+                unelevated
+                no-caps
+                color="deep-purple-6"
+                icon="auto_awesome"
+                :label="selectedLang === 'he' ? 'ערוך עם AI' : selectedLang === 'fr' ? 'Éditer avec IA' : 'Edit with AI'"
+                :disable="!whatsappMessage"
+                size="md"
+              />
               <q-btn
                 @click="onCopyMessage"
                 class="copy-msg-btn"
@@ -541,53 +578,54 @@
     </q-dialog>
 
     <!-- WELCOME DIALOG — first-visit "what's new" overlay -->
-    <!-- Shows once per release. Dismissal writes `welcome_seen:multifare-release-2026-06-13`
+    <!-- Shows once per release. Dismissal writes `welcome_seen:ai-studio-beta-2026-07-19`
          to localStorage so subsequent visits skip it. Future releases bump the key. -->
     <q-dialog v-model="welcomeOpen" persistent>
       <q-card class="welcome-dialog" dir="rtl">
         <div class="welcome-header">
-          <div class="welcome-emoji">🎉</div>
-          <div class="welcome-title">ברוך הבא לעדכון חדש!</div>
-          <div class="welcome-subtitle">Multi Airfare בכל השפות + מסלול טיסות בלבד</div>
+          <div class="welcome-emoji">🤖</div>
+          <div class="welcome-title">חדש — עוזר ה-AI <span class="welcome-beta">beta</span></div>
+          <div class="welcome-subtitle">שני מצבים חכמים לבניית הצעות — <strong>ואפשר גם להמשיך רגיל לגמרי</strong></div>
         </div>
 
         <q-card-section class="welcome-body">
           <div class="welcome-section">
             <div class="welcome-section-title">
+              <span class="welcome-section-icon">🤖</span>
+              <span>מצב סוכן — יצירה מאפס</span>
+            </div>
+            <div class="welcome-section-text">
+              מדביקים אמדאוס ולוחצים <strong>מצב סוכן 🤖</strong>. פשוט <strong>מספרים בחופש</strong> מה תרצה בהצעה — הסיטואציה, מי משלם, התנאים — וה-AI בונה הצעה <strong>שלמה בסגנון שלך</strong>. מושלם ל<strong>הזמנות חילוץ</strong>, גוף חיצוני שמשלם, הצעה בלי מחיר ללקוח, ומקרים לא שגרתיים.
+            </div>
+          </div>
+
+          <div class="welcome-section">
+            <div class="welcome-section-title">
               <span class="welcome-section-icon">✨</span>
-              <span>Multi Airfare Quote — עכשיו בכל 3 השפות</span>
+              <span>מיוחדות — עריכה בשיחה</span>
             </div>
             <div class="welcome-section-text">
-              שלוש שכבות מחיר (<strong>Eco-Lite</strong> / <strong>Eco-Classic</strong> / <strong>Eco-Flex</strong>) זמינות עכשיו בעברית, באנגלית ובצרפתית — באותו סגנון של ההצעה הסטנדרטית שלך. <strong>בעברית ובצרפתית — חדש לגמרי.</strong> באנגלית נשאר בדיוק כפי שכתבת.
+              כבר יש הצעה מוכנה? לחץ <strong>מיוחדות ✨</strong> מתחת לתצוגה, <strong>דבר אל ההודעה</strong> ובקש שינויים נקודתיים ("תשנה דמי ביטול", "תוסיף מקומות מושב"). אפשר לכתוב <strong>בכל שפה</strong> — ההצעה תישאר תמיד בשפת המקור שלה.
             </div>
           </div>
 
           <div class="welcome-section">
             <div class="welcome-section-title">
-              <span class="welcome-section-icon">✈️</span>
-              <span>Flights Only — מסלול טיסות בלבד</span>
+              <span class="welcome-section-icon">🔒</span>
+              <span>בטוח לחלוטין</span>
             </div>
             <div class="welcome-section-text">
-              מצב חדש שמייצר רק את בלוק <strong>מסלול הטיסה</strong> — בלי פתיחה, בלי תנאי כרטיס, בלי חתימה. שימושי כשהלקוח רק רוצה לראות את הטיסות.
+              <strong>פרטי הטיסה מהאמדאוס תמיד נעולים</strong> ולא משתנים — מספרים, תאריכים ושעות תמיד מדויקים. ה-AI נשען <strong>אך ורק</strong> על התבניות, השפה והאימוג׳ים שלך, ולא ממציא כלום.
             </div>
           </div>
 
-          <div class="welcome-section">
+          <div class="welcome-section welcome-section-beta">
             <div class="welcome-section-title">
-              <span class="welcome-section-icon">🎯</span>
-              <span>איך משתמשים בפיצ׳רים החדשים?</span>
+              <span class="welcome-section-icon">🧪</span>
+              <span>גרסת beta — נשמח למשוב!</span>
             </div>
             <div class="welcome-section-text">
-              <div class="welcome-howto-item">
-                <strong>1. תפריט הבחירה</strong> — עכשיו עם אייקונים:
-                <div class="welcome-howto-sub">⭐ Standard / ✈️ Flights Only / 🎫 Multi Airfare</div>
-              </div>
-              <div class="welcome-howto-item">
-                <strong>2. צ׳קבוקסים חדשים</strong> — ב־Multi Airfare תקבל קבוצה "🎫 Airfare options" עם צ׳קבוקס לכל שכבה (🟥 / 🟩 / 🟦). כברירת מחדל כולן דלוקות. רוצה להציע ללקוח רק 2 שכבות? פשוט תכבה אחת.
-              </div>
-              <div class="welcome-howto-item">
-                <strong>3. התראה חכמה</strong> — אם תכבה את Eco-Lite אבל תשאיר את EL AL Protect — המערכת תזכיר לך שהבלוק עדיין מזכיר אותו.
-              </div>
+              זה <strong>חדש ועדיין משתפר</strong>. <strong>לא חייבים להשתמש בזה</strong> — אפשר להמשיך לעבוד בדיוק כרגיל, זה רק תוסף AI אופציונלי. מצאת באג או שיש לך רעיון לשיפור? <strong>שלח לי הערות</strong> ואני אמשיך לשפר 🙏
             </div>
           </div>
         </q-card-section>
@@ -599,7 +637,7 @@
             no-caps
             size="md"
             class="welcome-cta"
-            label="הבנתי, בוא נתחיל! 🚀"
+            label="הבנתי, בוא ננסה! 🚀"
             @click="dismissWelcome"
           />
         </q-card-actions>
@@ -653,15 +691,16 @@ import {
   pingTranslationApi
 } from "src/assets/nameTranslator.js";
 import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
+import SpecialAgentPanel from "src/components/SpecialAgentPanel.vue";
 
 // Welcome popup release tag. Bump this on every release that ships new
 // features worth highlighting — everyone sees the dialog once more.
 // Module-level const (NOT on the component options) so it isn't reactive
 // and isn't accidentally persisted with the component state.
-const WELCOME_KEY = "welcome_seen:multifare-he-fr-2026-06-13";
+const WELCOME_KEY = "welcome_seen:ai-studio-beta-2026-07-19";
 
 export default {
-  components: { WhatsAppPhonePreview },
+  components: { WhatsAppPhonePreview, SpecialAgentPanel },
   mixins: [messageMixin],
   data() {
     return {
@@ -674,6 +713,12 @@ export default {
       destinationPickerOpen: false,
       pendingDestinationCode: null,
       selectedFinalDestination: null,
+      // When true, confirming the destination opens the AI Studio agent
+      // instead of building a template message. Set by onStartStudio().
+      studioIntent: false,
+      // Concrete details (customer name, travelers, destination) handed to the
+      // Studio agent so it writes them into the message instead of placeholders.
+      studioKnownDetails: null,
       // Welcome dialog — first-visit "what's new" overlay. Stays open
       // until the user clicks the CTA, which writes a per-release flag to
       // localStorage so subsequent visits skip it. Bump WELCOME_KEY on
@@ -697,6 +742,13 @@ export default {
       },
       previewTxt: "",
       whatsappMessage: "",
+      // "מיוחדות" — swaps the preview for the Specials agent panel so Gad can
+      // adapt the message by talking to it (rescue bookings, external payer, …).
+      specialMode: false,
+      // "מצב סוכן" — Studio: AI writes the whole message from a brief; only the
+      // itinerary is fixed. Reuses specialMode to swap in SpecialAgentPanel.
+      studioMode: false,
+      studioItinerary: "",
       darkMode: false,
       ticketIssuanceDeadline: "",
       // Pilot: lets Gad pick which template fills with the Amadeus PNR data.
@@ -776,6 +828,58 @@ export default {
       }
       this.apiStatus = result.openaiConfigured ? "ok" : "misconfigured";
     },
+    // Entry point for Studio mode: route through the SAME destination picker as
+    // the normal flow (so the multi-destination "pick the primary" step and the
+    // passenger-name translation both run), then open the agent instead of
+    // building a template. The branch happens in confirmDestinationAndContinue.
+    onStartStudio() {
+      this.studioIntent = true;
+      this.openDestinationPicker();
+    },
+    onOpenStudio() {
+      // Studio: hand the AI the fixed itinerary + the concrete details Gad
+      // already entered (customer name, travelers, destination) and let it write
+      // the whole message from his brief — do NOT build a template message here.
+      // getAmadeusTranslate mutates data.journey/journeyCodes, so snapshot/restore.
+      const jSnap = (this.data.journey || []).slice();
+      const jcSnap = { ...(this.data.journeyCodes || {}) };
+      this.studioItinerary = this.getAmadeusTranslate(this.data.smartAmadeusCode || "");
+      this.data.journey = jSnap;
+      this.data.journeyCodes = jcSnap;
+
+      const firstName = ((this.data.travelers[0] && this.data.travelers[0].name) || "").trim();
+      const allNames = (this.data.travelers || [])
+        .map(t => (t.name || "").trim())
+        .filter(Boolean);
+      const dest = this.selectedFinalDestination;
+      this.studioKnownDetails = {
+        customerName: firstName,
+        travelers: allNames,
+        destination: dest ? (dest.cityName || dest.city || "") : "",
+        destinationCode: dest ? dest.code || "" : ""
+      };
+
+      this.studioMode = true;
+      this.specialMode = true;
+      this.tab = "preview";
+    },
+    onCloseAgent() {
+      this.specialMode = false;
+      this.studioMode = false;
+      this.studioIntent = false;
+    },
+    // Shared tail of confirmDestinationAndContinue: either open the Studio agent
+    // (studio intent) or build the normal template message.
+    proceedAfterDestination() {
+      this.destinationPickerOpen = false;
+      if (this.studioIntent) {
+        this.studioIntent = false;
+        this.onOpenStudio();
+      } else {
+        this.tab = "preview";
+        this.onPreview();
+      }
+    },
     openDestinationPicker() {
       const prev = this.selectedFinalDestination ? this.selectedFinalDestination.code : null;
       const dests = this.extractedDestinations;
@@ -795,9 +899,7 @@ export default {
       if (parsedNames.length === 0) {
         this.lastTranslatedNames = [];
         this.lastTranslationInfo = "";
-        this.destinationPickerOpen = false;
-        this.tab = "preview";
-        this.onPreview();
+        this.proceedAfterDestination();
         return;
       }
 
@@ -809,9 +911,7 @@ export default {
         const newTravelers = buildTravelersFromNames(parsedNames, translated);
         this.data.travelers = newTravelers;
         this.lastTranslatedNames = newTravelers.map(t => t.name);
-        this.destinationPickerOpen = false;
-        this.tab = "preview";
-        this.onPreview();
+        this.proceedAfterDestination();
         this.$q.notify({
           type: "positive",
           message: this.translatedCountMsg(newTravelers.length),
@@ -826,9 +926,7 @@ export default {
         const fallbackTravelers = buildTravelersFromNames(parsedNames, []);
         this.data.travelers = fallbackTravelers;
         this.lastTranslatedNames = fallbackTravelers.map(t => t.name);
-        this.destinationPickerOpen = false;
-        this.tab = "preview";
-        this.onPreview();
+        this.proceedAfterDestination();
         const msg =
           err && err.message === "missing_proxy_config"
             ? this.missingApiKeyMsg
@@ -2317,6 +2415,13 @@ export default {
     selectDestinationBtnLabel() {
       return this.$t("select destination");
     },
+    studioBtnLabel() {
+      return this.selectedLang === "he"
+        ? "מצב סוכן"
+        : this.selectedLang === "fr"
+        ? "Mode agent"
+        : "Agent mode";
+    },
     extractedDestinations() {
       // Returns unique non-origin airports found in the parsed PNR, ready
       // for the destination-picker dialog. The first flight's origin is treated
@@ -2459,6 +2564,23 @@ export default {
     previewContactName() {
       const name = (this.data.travelers[0] && this.data.travelers[0].name) || "";
       return name.trim() || (this.selectedLang === "he" ? "לקוח" : "Customer");
+    },
+    // Compact, read-only flight facts handed to the Specials agent as context.
+    // The agent never edits these — they live in the locked flight block — but
+    // seeing them helps it phrase the wrapper correctly.
+    flightSummaryForAgent() {
+      try {
+        const flights = this.getParsedFlights();
+        if (!flights || !flights.length) return "";
+        return flights
+          .map(f => {
+            const dir = f.direction ? `${f.direction}: ` : "";
+            return `${dir}${f.airline} ${f.flightNumber} ${f.departAirportCode}→${f.destAirportCode} ${f.departDay || ""} ${f.departDateNumberOnlyStr || ""} ${f.departMonth || ""} ${f.departTime || ""}`.trim();
+          })
+          .join("\n");
+      } catch (e) {
+        return "";
+      }
     },
     travelersTypeAmountMap() {
       let travelersTypeAmountMap = {};
@@ -3563,6 +3685,32 @@ body.body--dark .section-toggle-group {
   font-size: 14px;
   opacity: 0.95;
   font-weight: 500;
+}
+
+.welcome-beta {
+  display: inline-block;
+  vertical-align: middle;
+  margin-inline-start: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.welcome-section-beta {
+  background: #fff8e1;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+body.body--dark .welcome-section-beta {
+  background: #3a2f10;
+  border-color: #92641b;
 }
 
 .welcome-body {
