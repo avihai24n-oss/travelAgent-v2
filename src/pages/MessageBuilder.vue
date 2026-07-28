@@ -541,52 +541,39 @@
     </q-dialog>
 
     <!-- WELCOME DIALOG — first-visit "what's new" overlay -->
-    <!-- Shows once per release. Dismissal writes `welcome_seen:multifare-release-2026-06-13`
+    <!-- Shows once per release. Dismissal writes `welcome_seen:flights-only-restored-2026-07-28`
          to localStorage so subsequent visits skip it. Future releases bump the key. -->
     <q-dialog v-model="welcomeOpen" persistent>
       <q-card class="welcome-dialog" dir="rtl">
         <div class="welcome-header">
-          <div class="welcome-emoji">🎉</div>
-          <div class="welcome-title">ברוך הבא לעדכון חדש!</div>
-          <div class="welcome-subtitle">Multi Airfare בכל השפות + מסלול טיסות בלבד</div>
+          <div class="welcome-emoji">✈️</div>
+          <div class="welcome-title">מסלול טיסות בלבד חזר!</div>
+          <div class="welcome-subtitle">הפיצ׳ר שוב זמין ועובד כמו שצריך</div>
         </div>
 
         <q-card-section class="welcome-body">
           <div class="welcome-section">
             <div class="welcome-section-title">
-              <span class="welcome-section-icon">✨</span>
-              <span>Multi Airfare Quote — עכשיו בכל 3 השפות</span>
+              <span class="welcome-section-icon">✅</span>
+              <span>Flights Only — חזר לפעולה</span>
             </div>
             <div class="welcome-section-text">
-              שלוש שכבות מחיר (<strong>Eco-Lite</strong> / <strong>Eco-Classic</strong> / <strong>Eco-Flex</strong>) זמינות עכשיו בעברית, באנגלית ובצרפתית — באותו סגנון של ההצעה הסטנדרטית שלך. <strong>בעברית ובצרפתית — חדש לגמרי.</strong> באנגלית נשאר בדיוק כפי שכתבת.
-            </div>
-          </div>
-
-          <div class="welcome-section">
-            <div class="welcome-section-title">
-              <span class="welcome-section-icon">✈️</span>
-              <span>Flights Only — מסלול טיסות בלבד</span>
-            </div>
-            <div class="welcome-section-text">
-              מצב חדש שמייצר רק את בלוק <strong>מסלול הטיסה</strong> — בלי פתיחה, בלי תנאי כרטיס, בלי חתימה. שימושי כשהלקוח רק רוצה לראות את הטיסות.
+              המסלול שמייצר <strong>רק את בלוק מסלול הטיסה</strong> — בלי פתיחה, בלי תנאי כרטיס, בלי חתימה — <strong>חזר לעבוד.</strong> הוא לא נכלל בבנייה מאז עדכון Multi Airfare, ועכשיו תוקן וזמין שוב לשימוש מלא.
             </div>
           </div>
 
           <div class="welcome-section">
             <div class="welcome-section-title">
               <span class="welcome-section-icon">🎯</span>
-              <span>איך משתמשים בפיצ׳רים החדשים?</span>
+              <span>איך משתמשים?</span>
             </div>
             <div class="welcome-section-text">
               <div class="welcome-howto-item">
-                <strong>1. תפריט הבחירה</strong> — עכשיו עם אייקונים:
+                <strong>בחר מתפריט הבחירה</strong> את המסלול הרצוי:
                 <div class="welcome-howto-sub">⭐ Standard / ✈️ Flights Only / 🎫 Multi Airfare</div>
               </div>
               <div class="welcome-howto-item">
-                <strong>2. צ׳קבוקסים חדשים</strong> — ב־Multi Airfare תקבל קבוצה "🎫 Airfare options" עם צ׳קבוקס לכל שכבה (🟥 / 🟩 / 🟦). כברירת מחדל כולן דלוקות. רוצה להציע ללקוח רק 2 שכבות? פשוט תכבה אחת.
-              </div>
-              <div class="welcome-howto-item">
-                <strong>3. התראה חכמה</strong> — אם תכבה את Eco-Lite אבל תשאיר את EL AL Protect — המערכת תזכיר לך שהבלוק עדיין מזכיר אותו.
+                בחירה ב־<strong>✈️ Flights Only</strong> תפיק הודעה שכוללת רק את פרטי הטיסות — מושלם כשהלקוח רק רוצה לראות את הטיסות.
               </div>
             </div>
           </div>
@@ -658,7 +645,7 @@ import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
 // features worth highlighting — everyone sees the dialog once more.
 // Module-level const (NOT on the component options) so it isn't reactive
 // and isn't accidentally persisted with the component state.
-const WELCOME_KEY = "welcome_seen:multifare-he-fr-2026-06-13";
+const WELCOME_KEY = "welcome_seen:flights-only-restored-2026-07-28";
 
 export default {
   components: { WhatsAppPhonePreview },
