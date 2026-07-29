@@ -104,7 +104,7 @@
               class="translate-btn"
               :loading="isTranslatingNames"
               :disable="!data.smartAmadeusCode || apiStatus === 'offline'"
-              @click="openDestinationPicker"
+              @click="openDestinationPicker()"
               no-caps
             />
             <q-btn
@@ -561,7 +561,7 @@
             no-caps
             color="grey-7"
             :label="$t('destination picker cancel')"
-            @click="destinationPickerOpen = false"
+            @click="destinationPickerOpen = false; studioIntent = false"
           />
           <q-btn
             color="primary"
@@ -833,8 +833,9 @@ export default {
     // passenger-name translation both run), then open the agent instead of
     // building a template. The branch happens in confirmDestinationAndContinue.
     onStartStudio() {
-      this.studioIntent = true;
-      this.openDestinationPicker();
+      // Studio intent is decided inside openDestinationPicker (the single entry
+      // point) so a stale flag can never leak into the normal flow.
+      this.openDestinationPicker(true);
     },
     onOpenStudio() {
       // Studio: hand the AI the fixed itinerary + the concrete details Gad
@@ -880,7 +881,12 @@ export default {
         this.onPreview();
       }
     },
-    openDestinationPicker() {
+    openDestinationPicker(forStudio = false) {
+      // Decide studio-vs-normal HERE, at the single entry point, so an abandoned
+      // Studio attempt (opened the picker, then cancelled) can never leak its
+      // intent into a later normal "create" click — that was the bug where a
+      // regular create wrongly opened Studio (generate-from-scratch).
+      this.studioIntent = forStudio === true;
       const prev = this.selectedFinalDestination ? this.selectedFinalDestination.code : null;
       const dests = this.extractedDestinations;
       const stillValid = prev && dests.some(d => d.code === prev);

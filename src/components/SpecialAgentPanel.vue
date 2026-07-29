@@ -49,19 +49,40 @@
           </div>
         </div>
 
+        <!-- Confirmation gate: appears only when a change touches locked flight
+             content (seats, etc.). Nothing locked changes without ✅ here. -->
+        <div v-if="pendingOps.length" class="agent-confirm" :dir="dir">
+          <div class="agent-confirm-head">
+            🔒 {{ dir === 'rtl' ? 'שינוי בפרטי טיסה נעולים' : 'Change to locked flight details' }}
+          </div>
+          <div class="agent-confirm-body">{{ pendingSummary }}</div>
+          <div class="agent-confirm-actions">
+            <button type="button" class="ac-btn ac-reject" @click="rejectPending">
+              ✖️ {{ dir === 'rtl' ? 'דחה' : 'Dismiss' }}
+            </button>
+            <button type="button" class="ac-btn ac-approve" @click="confirmPending">
+              ✅ {{ dir === 'rtl' ? 'אשר שינוי' : 'Approve' }}
+            </button>
+          </div>
+        </div>
+
         <!-- Agent compose bar -->
         <form class="agent-bar" :dir="dir" @submit.prevent="send">
-          <input
+          <textarea
+            ref="input"
             v-model="input"
             class="agent-input"
-            :placeholder="placeholder"
-            :disabled="loading || !apiOk"
+            :placeholder="pendingOps.length ? (dir === 'rtl' ? 'אשר או דחה את השינוי למעלה…' : 'Approve or dismiss the change above…') : placeholder"
+            :disabled="loading || !apiOk || pendingOps.length > 0"
             :dir="dir"
-          />
+            rows="1"
+            @keydown.enter.exact.prevent="send"
+            @input="autoGrow"
+          ></textarea>
           <button
             type="submit"
             class="agent-send"
-            :disabled="loading || !apiOk || !input.trim()"
+            :disabled="loading || !apiOk || !input.trim() || pendingOps.length > 0"
             :aria-label="dir === 'rtl' ? 'שלח' : 'Send'"
           >➤</button>
         </form>
@@ -104,7 +125,11 @@ export default {
       input: "",
       loading: false,
       apiOk: true,
-      hasDraft: false
+      hasDraft: false,
+      // Ops that touch the locked flight block, waiting for the user's
+      // explicit confirmation (seats, etc.), plus a human summary of them.
+      pendingOps: [],
+      pendingSummary: ""
     };
   },
   computed: {
@@ -181,8 +206,10 @@ export default {
     },
     async send() {
       const instruction = this.input.trim();
-      if (!instruction || this.loading) return;
+      // A pending confirmation must be resolved (approve/dismiss) before sending.
+      if (!instruction || this.loading || this.pendingOps.length) return;
       this.input = "";
+      this.$nextTick(this.autoGrow); // shrink the textarea back to one row
       this.log.push({ kind: "user", text: instruction });
       this.loading = true;
       this.scrollDown();
@@ -216,40 +243,42 @@ export default {
 
       try {
         const history = this.buildHistory();
-        const { patch, note, dropped } = await composeMessage({
+        const { patch, pending, summary, note } = await composeMessage({
           instruction,
           blocks: this.blocks,
           lang: this.lang,
           flightSummary: this.flightSummary,
           history
         });
+
+        // Apply the non-locked ops immediately, and measure whether the message
+        // TEXT actually changed — the honest signal of success (a "replace" with
+        // identical text, or a fully-rejected patch, changes nothing).
+        const beforeText = blocksToText(this.blocks);
         this.blocks = applyPatch(this.blocks, patch);
-        const applied = patch.length;
-        const rejected = dropped && dropped.length ? dropped.length : 0;
-        // Only report the model's success note when something actually changed —
-        // otherwise a rejected op (e.g. it tried to edit the locked flight block)
-        // would show a misleading "done" message.
-        if (applied > 0) {
-          if (note) this.log.push({ kind: "agent", text: note });
-          if (rejected) {
-            this.log.push({
-              kind: "warn",
-              text: this.dir === "rtl"
-                ? "חלק מהשינויים דולגו כי נגעו בבלוק הטיסות הנעול."
-                : "Some edits were skipped — they touched the locked flight block."
-            });
-          }
-        } else if (rejected) {
+        const changed = blocksToText(this.blocks) !== beforeText;
+        if (changed && note) this.log.push({ kind: "agent", text: note });
+
+        // Ops that touch the locked flight block don't apply on their own — stage
+        // them behind the confirmation gate (seats, etc.).
+        if (Array.isArray(pending) && pending.length) {
+          this.pendingOps = pending;
+          this.pendingSummary =
+            (summary && summary.trim()) ||
+            (this.dir === "rtl"
+              ? "שינוי בפרטי הטיסה הנעולים."
+              : "A change to the locked flight details.");
+          return; // finally{} clears loading & scrolls
+        }
+
+        // Nothing pending: if nothing actually changed, say so plainly so Gad
+        // never mistakes a silent no-op for success.
+        if (!changed) {
           this.log.push({
             kind: "warn",
             text: this.dir === "rtl"
-              ? "לא הצלחתי לבצע את זה — הבקשה נגעה בבלוק הטיסות הנעול. נסה לבקש להוסיף את המידע כשורה נפרדת."
-              : "Couldn't apply that — it touched the locked flight block. Try adding the info as a separate line."
-          });
-        } else {
-          this.log.push({
-            kind: "agent",
-            text: this.dir === "rtl" ? "לא בוצע שינוי." : "No change made."
+              ? "לא הצלחתי לבצע את זה 🙁 נסה לנסח אחרת, או לערוך ידנית בתצוגה."
+              : "I couldn't do that 🙁 Try rephrasing, or edit it manually in the preview."
           });
         }
       } catch (e) {
@@ -274,6 +303,43 @@ export default {
         const el = this.$refs.chat;
         if (el) el.scrollTop = el.scrollHeight;
       });
+    },
+    // Grow the compose textarea with its content (Shift+Enter adds lines),
+    // capped so it never eats the chat. Resets to one row when emptied.
+    autoGrow() {
+      const el = this.$refs.input;
+      if (!el) return;
+      el.style.height = "auto";
+      el.style.height = Math.min(el.scrollHeight, 96) + "px";
+    },
+    // ── confirmation gate for locked (flight) changes ──────────────────
+    confirmPending() {
+      if (!this.pendingOps.length) return;
+      const beforeText = blocksToText(this.blocks);
+      // allowLocked: these ops were explicitly approved, so they may land on the
+      // locked flight block (e.g. update the seat line).
+      this.blocks = applyPatch(this.blocks, this.pendingOps, { allowLocked: true });
+      const changed = blocksToText(this.blocks) !== beforeText;
+      this.log.push({
+        kind: changed ? "agent" : "warn",
+        text: changed
+          ? this.dir === "rtl" ? "✅ עודכן." : "✅ Updated."
+          : this.dir === "rtl" ? "לא הצלחתי לבצע את זה 🙁" : "I couldn't do that 🙁"
+      });
+      this.clearPending();
+      this.scrollDown();
+    },
+    rejectPending() {
+      this.log.push({
+        kind: "warn",
+        text: this.dir === "rtl" ? "השינוי בוטל." : "Change dismissed."
+      });
+      this.clearPending();
+      this.scrollDown();
+    },
+    clearPending() {
+      this.pendingOps = [];
+      this.pendingSummary = "";
     },
     renderWhatsApp(src) {
       let s = String(src)
@@ -461,16 +527,19 @@ export default {
 
 /* Agent compose bar */
 .agent-bar {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: flex-end; gap: 8px;
   padding: 8px 10px 10px;
   background: #f0f2f5;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 .agent-input {
-  flex: 1; height: 40px; border: 0; border-radius: 20px;
-  padding: 0 16px; font-size: 14px; outline: 0;
+  flex: 1; box-sizing: border-box;
+  min-height: 40px; max-height: 96px;
+  border: 0; border-radius: 20px;
+  padding: 9px 16px; font-size: 14px; line-height: 1.35; outline: 0;
   background: #fff; color: #111b21; font-family: inherit;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
+  resize: none; overflow-y: auto;
 }
 .agent-input:disabled { opacity: 0.6; }
 .agent-send {
@@ -484,6 +553,42 @@ export default {
 .agent-send:active:not(:disabled) { transform: scale(0.92); }
 [dir="rtl"] .agent-send:active:not(:disabled) { transform: scaleX(-1) scale(0.92); }
 .agent-send:disabled { opacity: 0.5; cursor: default; }
+
+/* Confirmation gate for locked flight changes (seats, etc.) */
+.agent-confirm {
+  margin: 0 8px 6px;
+  background: #fff8e1;
+  border: 1px solid #fdd835;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  animation: acRise 0.18s ease-out;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+@keyframes acRise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.agent-confirm-head {
+  font-size: 12.5px; font-weight: 700; color: #7a5800; margin-bottom: 4px;
+}
+.agent-confirm-body {
+  font-size: 13.5px; line-height: 1.4; color: #4a3b00;
+  white-space: pre-wrap; word-break: break-word;
+}
+.agent-confirm-actions {
+  display: flex; gap: 8px; margin-top: 10px;
+}
+.ac-btn {
+  flex: 1; height: 38px; border: 0; border-radius: 19px;
+  font-size: 13.5px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: filter 0.15s, transform 0.1s;
+}
+.ac-btn:active { transform: scale(0.97); }
+.ac-approve { background: #00a884; color: #fff; }
+.ac-approve:hover { filter: brightness(1.06); }
+.ac-reject { background: #fff; color: #b23c3c; box-shadow: inset 0 0 0 1px #e6c9c9; }
+.ac-reject:hover { background: #fdf3f3; }
 
 @media (max-width: 440px) {
   .iphone-outer { padding: 8px 0; }
@@ -516,4 +621,9 @@ body.body--dark .agent-note.warn { background: #3a2f10; color: #fde68a; }
 body.body--dark .agent-note.error { background: #4a1c1c; color: #ffb4ab; }
 body.body--dark .agent-bar { background: #1e2a30; border-top-color: rgba(255, 255, 255, 0.06); }
 body.body--dark .agent-input { background: #2a3942; color: #e9edef; }
+body.body--dark .agent-confirm { background: #3a2f10; border-color: #92641b; box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.4); }
+body.body--dark .agent-confirm-head { color: #fde68a; }
+body.body--dark .agent-confirm-body { color: #f0e2b8; }
+body.body--dark .ac-reject { background: #2a3942; color: #ffb4ab; box-shadow: inset 0 0 0 1px #5a3a3a; }
+body.body--dark .ac-reject:hover { background: #33272a; }
 </style>

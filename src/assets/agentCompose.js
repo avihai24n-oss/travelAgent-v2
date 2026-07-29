@@ -121,6 +121,10 @@ export async function composeMessage({ instruction, blocks, lang, flightSummary,
   const data = await res.json();
   return {
     patch: Array.isArray(data.patch) ? data.patch : [],
+    // Ops that touch the locked flight block — held back for the user to
+    // confirm via the gate (seats, etc.) instead of applying automatically.
+    pending: Array.isArray(data.pending) ? data.pending : [],
+    summary: typeof data.summary === "string" ? data.summary : "",
     note: typeof data.note === "string" ? data.note : "",
     dropped: Array.isArray(data.dropped) ? data.dropped : []
   };
@@ -259,10 +263,14 @@ function blockIdSalt() {
 
 /**
  * Applies the agent's patch to a blocks array and returns a NEW array.
- * Locked blocks are never modified (the server already drops such ops; this is
- * a second line of defence). Unknown ops are ignored.
+ *
+ * By default, locked blocks are never modified (the server routes such ops to
+ * `pending`; this is a second line of defence). Pass `{ allowLocked: true }`
+ * ONLY for ops the user has explicitly confirmed via the gate — then a
+ * replace/delete may land on a locked block (a locked block keeps its `locked`
+ * type after a confirmed replace). Unknown ops are ignored.
  */
-export function applyPatch(blocks, patch) {
+export function applyPatch(blocks, patch, { allowLocked = false } = {}) {
   if (!Array.isArray(patch) || !patch.length) return blocks.slice();
   const lockedIds = new Set(blocks.filter(b => b.type === "locked").map(b => b.id));
   let result = blocks.slice();
@@ -270,8 +278,8 @@ export function applyPatch(blocks, patch) {
   for (const op of patch) {
     if (!op) continue;
     // A locked block can be an insert_after anchor (adds a new block after it),
-    // but never replaced or deleted.
-    if (lockedIds.has(op.id) && op.op !== "insert_after") continue;
+    // but never replaced or deleted — unless the user confirmed it (allowLocked).
+    if (!allowLocked && lockedIds.has(op.id) && op.op !== "insert_after") continue;
     const idx = result.findIndex(b => b.id === op.id);
     if (idx === -1) continue;
 

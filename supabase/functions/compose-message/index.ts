@@ -91,8 +91,8 @@ You edit ONE message that is given to you as an ordered list of BLOCKS. You retu
 
 ════════ HARD RULES (never break) ════════
 1. NEVER invent a new template or new message structure. You LEAN ENTIRELY on Gad's existing templates below — reuse his exact phrasing, section order, punctuation and tone. When in doubt, copy his style verbatim and adjust minimally.
-2. NEVER touch a block whose type is "locked" (that is the flight block, generated deterministically from the Amadeus PNR). Do not reference it, replace it, delete it, or emit its content. Any op targeting a locked block will be rejected. IMPORTANT: if the user asks to add or change information that currently sits INSIDE the locked block — e.g. seat numbers, meals, or a note about a specific flight — do NOT target the locked block. Instead use an "insert_after" op on the locked block's id to add a NEW text block that carries the new info (for example a "מקומות מושב: 7E, 5B" line). That keeps the flight facts safe while still honouring the request.
-3. NEVER write literal flight facts you were not given (flight numbers, dates, times, airport names/codes). Those exist inside the locked block. Seat numbers, meals or similar that the USER explicitly gives you in their request may be written — but only in a NEW block via an "insert_after" op (per rule 2), never inside the locked block.
+2. The flight block (type "locked") is the Amadeus itinerary. BY DEFAULT do not touch it — for a normal edit, never emit any op on a locked block. The ONE exception: if the user EXPLICITLY asks to change locked flight content that lives inside it — almost always SEAT numbers (💺), and only if they clearly insist, meals — you MAY emit a "replace" op on that locked block. When you do, reproduce the block's current text EXACTLY and change ONLY the precise thing the user asked; every other flight fact (flight numbers, dates, times, airport names/codes, cities, directions) MUST stay byte-for-byte identical. Any op you emit on a locked block is NEVER applied automatically — the user is first shown a confirmation gate — so whenever you emit such an op you MUST also fill the top-level "summary" field describing exactly what will change. If the user only wants to ADD a remark/line beside the flight (not change existing flight content), prefer an "insert_after" op on the locked block's id instead (that adds a new block and needs no confirmation).
+3. NEVER invent literal flight facts you were not given (flight numbers, dates, times, airport names/codes). Seat numbers / meals that the USER explicitly provides may be written into the locked block via a confirmed "replace" (rule 2), or added beside it via "insert_after". If unsure, prefer "insert_after".
 4. Use ONLY placeholders from the ALLOWED PLACEHOLDERS list. Never invent a placeholder. If a value has no placeholder, write it as Gad's own plain wording.
 5. Use ONLY emojis from the ALLOWED EMOJIS whitelist — the exact set Gad already uses. Never introduce a new emoji.
 6. Write content in ${LANG_NAME[lang]}, matching Gad's voice. For Hebrew keep it RTL and use WhatsApp *bold* (single asterisks) exactly as Gad does.
@@ -115,11 +115,12 @@ Return ONLY a JSON object:
     { "op": "insert_after", "id": "<block id>", "text": "<new block text>" },
     { "op": "delete", "id": "<block id>" }
   ],
+  "summary": "<REQUIRED whenever ANY op in patch targets a locked flight block: one short sentence in ${LANG_NAME[lang]} stating exactly what will change, e.g. 'אעדכן את המושבים ל-12A, 14C'. Leave it as an empty string when no op touches a locked block.>",
   "note": "<one short sentence in ${LANG_NAME[lang]} telling Gad what you changed>"
 }
 - "op" is one of: "replace", "insert_after", "delete".
 - "id" must be an id from the provided blocks (for insert_after, the new block goes right after that id).
-- If nothing should change, return { "patch": [], "note": "<explanation>" }.
+- If nothing should change, return { "patch": [], "summary": "", "note": "<explanation>" }.
 No markdown, no commentary — JSON only.`;
 }
 
@@ -129,7 +130,12 @@ function buildUserPrompt(body: RequestBody): string {
       id: b.id,
       type: b.type,
       label: b.label || null,
-      text: b.type === "locked" ? "[LOCKED FLIGHT BLOCK — do not touch]" : b.text,
+      // Locked blocks now expose their real text so that — ONLY when the user
+      // explicitly asks to change locked flight content (e.g. seat numbers) —
+      // the model can emit a "replace" that reproduces the block byte-for-byte
+      // with just that one thing changed. Such ops are never auto-applied; the
+      // server returns them as "pending" for the user to confirm.
+      text: b.text,
     })),
     null,
     2
@@ -321,7 +327,7 @@ Deno.serve(async (req: Request) => {
   const raw = data?.choices?.[0]?.message?.content;
   if (!raw) return json({ error: "empty_response" }, 502);
 
-  let parsed: { patch?: unknown; note?: unknown };
+  let parsed: { patch?: unknown; summary?: unknown; note?: unknown };
   try {
     parsed = JSON.parse(raw);
   } catch {
@@ -335,7 +341,8 @@ Deno.serve(async (req: Request) => {
   const knownIds = new Set(body.blocks.map((b) => b.id));
   const allowedTokens = new Set(body.corpus.placeholders.map((p) => p.token));
 
-  const accepted: PatchOp[] = [];
+  const accepted: PatchOp[] = []; // applied immediately (non-locked)
+  const pending: PatchOp[] = []; // touch a locked block → require user confirmation
   const dropped: string[] = [];
 
   for (const op of rawPatch) {
@@ -347,17 +354,12 @@ Deno.serve(async (req: Request) => {
       dropped.push(`unknown op "${(op as { op: string }).op}"`);
       continue;
     }
-    // A locked block may not be replaced or deleted, but insert_after is fine:
-    // it adds a NEW block right AFTER the locked one without touching it (this
-    // is how the agent adds seat numbers, notes, etc. next to the itinerary).
-    if (lockedIds.has(op.id) && op.op !== "insert_after") {
-      dropped.push(`op on locked block ${op.id}`);
-      continue;
-    }
     if (!knownIds.has(op.id)) {
       dropped.push(`op on unknown block ${op.id}`);
       continue;
     }
+    // The placeholder whitelist applies to any text the model emits — including
+    // ops we will later route to "pending".
     if (op.op === "replace" || op.op === "insert_after") {
       if (typeof op.text !== "string") {
         dropped.push(`missing text on ${op.op}`);
@@ -369,11 +371,21 @@ Deno.serve(async (req: Request) => {
         continue;
       }
     }
+    // A replace/delete that hits a LOCKED flight block is NOT applied silently.
+    // It becomes "pending" so the client can show a confirmation gate (seats,
+    // etc.). insert_after only ADDS a block after the locked one — it never
+    // changes flight facts — so it stays auto-applied.
+    if (lockedIds.has(op.id) && op.op !== "insert_after") {
+      pending.push(op);
+      continue;
+    }
     accepted.push(op);
   }
 
   const note =
     typeof parsed.note === "string" && parsed.note.trim() ? parsed.note.trim() : "";
+  const summary =
+    typeof parsed.summary === "string" && parsed.summary.trim() ? parsed.summary.trim() : "";
 
-  return json({ patch: accepted, note, dropped });
+  return json({ patch: accepted, pending, summary, note, dropped });
 });
