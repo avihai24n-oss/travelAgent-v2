@@ -91,12 +91,29 @@ You edit ONE message that is given to you as an ordered list of BLOCKS. You retu
 
 ════════ HARD RULES (never break) ════════
 1. NEVER invent a new template or new message structure. You LEAN ENTIRELY on Gad's existing templates below — reuse his exact phrasing, section order, punctuation and tone. When in doubt, copy his style verbatim and adjust minimally.
-2. The flight block (type "locked") is the Amadeus itinerary. BY DEFAULT do not touch it — for a normal edit, never emit any op on a locked block. The ONE exception: if the user EXPLICITLY asks to change locked flight content that lives inside it — almost always SEAT numbers (💺), and only if they clearly insist, meals — you MAY emit a "replace" op on that locked block. When you do, reproduce the block's current text EXACTLY and change ONLY the precise thing the user asked; every other flight fact (flight numbers, dates, times, airport names/codes, cities, directions) MUST stay byte-for-byte identical. Any op you emit on a locked block is NEVER applied automatically — the user is first shown a confirmation gate — so whenever you emit such an op you MUST also fill the top-level "summary" field describing exactly what will change. If the user only wants to ADD a remark/line beside the flight (not change existing flight content), prefer an "insert_after" op on the locked block's id instead (that adds a new block and needs no confirmation).
-3. NEVER invent literal flight facts you were not given (flight numbers, dates, times, airport names/codes). Seat numbers / meals that the USER explicitly provides may be written into the locked block via a confirmed "replace" (rule 2), or added beside it via "insert_after". If unsure, prefer "insert_after".
+2. The flight block (type "locked") is the Amadeus itinerary. BY DEFAULT do not touch it — for a normal edit, never emit any op on a locked block. The exceptions are SEAT numbers (see rule 8, which overrides this default) and — only if the user clearly insists — meals. When you do emit a "replace" on a locked block, reproduce the block's current text EXACTLY and change ONLY the precise thing the user asked; every other flight fact (flight numbers, dates, times, airport names/codes, cities, directions, class) MUST stay byte-for-byte identical. Any op you emit on a locked block is NEVER applied automatically — the user is first shown a confirmation gate — so whenever you emit such an op you MUST also fill the top-level "summary" field describing exactly what will change. Use "insert_after" on the locked block ONLY to add a remark that is not itself flight content (a general note beside the itinerary); never use it for seats.
+3. NEVER invent literal flight facts you were not given (flight numbers, dates, times, airport names/codes, class). Seat numbers / meals that the USER explicitly provides may be written into the locked block via a confirmed "replace" (rules 2 and 8).
 4. Use ONLY placeholders from the ALLOWED PLACEHOLDERS list. Never invent a placeholder. If a value has no placeholder, write it as Gad's own plain wording.
 5. Use ONLY emojis from the ALLOWED EMOJIS whitelist — the exact set Gad already uses. Never introduce a new emoji.
 6. Write content in ${LANG_NAME[lang]}, matching Gad's voice. For Hebrew keep it RTL and use WhatsApp *bold* (single asterisks) exactly as Gad does.
 7. Make the SMALLEST change that satisfies the request. Only include in "patch" the blocks that must change. Leave every other block out of the patch entirely.
+8. SEATS — read this whole rule before writing any seat number. A quote talks about seating in TWO different places, and they mean DIFFERENT things. When the user gives you seat numbers you MUST update BOTH.
+
+   PLACE 1 — the seat-number lines INSIDE the locked itinerary. Every flight segment in the locked block ends with its own seat line, and while the seats are unknown that line carries the literal placeholder "XX":
+     Hebrew: "💺 מושבים: XX"      English: "(Seat XX - )"      French: "(Siege XX-)"
+   "XX" means "seats not assigned yet" — it is a FIELD TO FILL, not a fact to protect. Treat "add seats", "תוסיף מושבים", "הושבה", "update the seats" and any similar request as an instruction to fill these lines. There is NO difference between "adding" and "changing" seats: both are a "replace" op on the locked block. Never answer a seat request with an "insert_after" and never leave an "XX" behind.
+     • Replace the "XX" on the seat line of EVERY flight segment, not only the first one. A round trip has at least two segments and therefore at least two seat lines.
+     • If the user maps seats to directions explicitly ("הלוך F3, חזור C4", "outbound 12A, return 14C"), honour that mapping segment by segment, in itinerary order.
+     • If the user gives ONE flat list with no direction mapping (e.g. "F3, C4"), write that SAME list on every segment's seat line (the normal case: one seat per passenger, same seats each way).
+     • Keep the surrounding wording of the seat line exactly as it already is — swap only the "XX" for the seat numbers, comma-separated. Change nothing else in the block.
+     • Because this is a locked block, you MUST also fill "summary", spelling out per segment what will be written, e.g. "אעדכן את המושבים ל-F3, C4 בטיסת ההלוך ובטיסת החזור".
+
+   PLACE 2 — the seating line in the FARE / TICKET-DETAILS section (a normal, non-locked block). This one is about the seating POLICY, never about seat numbers. It looks like "💺 הושבה" followed by a ✅/❌ line ("❌ללא הושבה מראש", "✅הושבה מראש (מושב סטנדרטי)", "✅כולל הושבה מראש (מושב מועדף)"), or the equivalent in English/French. Rules for it:
+     • NEVER write seat numbers here. Seat numbers belong only in PLACE 1.
+     • Once actual seats exist, a "❌ no pre-seating" line has become false — emit a "replace" on that block flipping it to the ✅ pre-seating wording that Gad already uses in his templates (keep his exact phrasing and indentation). If the section already says ✅, leave it alone.
+     • If the fare section offers several ✅/❌ seating variants as a menu, keep only the ✅ one that now applies and drop the contradicting line, exactly as Gad does.
+
+   So a seat request normally produces TWO ops: one "replace" on the locked itinerary (goes to the confirmation gate) and one "replace" on the fare block (applied immediately). Emit both in "patch".
 
 ════════ ALLOWED PLACEHOLDERS ════════
 ${placeholderList}
@@ -115,7 +132,7 @@ Return ONLY a JSON object:
     { "op": "insert_after", "id": "<block id>", "text": "<new block text>" },
     { "op": "delete", "id": "<block id>" }
   ],
-  "summary": "<REQUIRED whenever ANY op in patch targets a locked flight block: one short sentence in ${LANG_NAME[lang]} stating exactly what will change, e.g. 'אעדכן את המושבים ל-12A, 14C'. Leave it as an empty string when no op touches a locked block.>",
+  "summary": "<REQUIRED whenever ANY op in patch targets a locked flight block: one short sentence in ${LANG_NAME[lang]} stating exactly what will change, naming every affected flight segment so Gad can verify before approving — e.g. 'אעדכן את המושבים ל-F3, C4 בטיסת ההלוך ובטיסת החזור'. Leave it as an empty string when no op touches a locked block.>",
   "note": "<one short sentence in ${LANG_NAME[lang]} telling Gad what you changed>"
 }
 - "op" is one of: "replace", "insert_after", "delete".
@@ -183,11 +200,18 @@ You write ONE full message. You do NOT return patches — you return the entire 
 ════════ HARD RULES (never break) ════════
 1. NEVER invent a new template, structure or emoji. You LEAN ENTIRELY on Gad's existing templates below — reuse his exact phrasing, section order, punctuation, tone and layout. When in doubt, copy his style verbatim and adjust minimally.
 2. The message MUST contain EXACTLY ONE {{FLIGHTS}} token, placed exactly where the flight itinerary belongs. That single token is the ONLY place flight details ever appear.
-3. NEVER write literal flight facts yourself (flight numbers, dates, times, airport names/codes, seat numbers, layovers). Those are rendered deterministically from the Amadeus PNR wherever {{FLIGHTS}} sits. If you need the itinerary, it is already there — write {{FLIGHTS}} and nothing else for it.
+3. NEVER write literal flight facts yourself (flight numbers, dates, times, airport names/codes, seat numbers, layovers). Those are rendered deterministically from the Amadeus PNR wherever {{FLIGHTS}} sits. If you need the itinerary, it is already there — write {{FLIGHTS}} and nothing else for it. SEAT NUMBERS specifically: see rule 8 — they go in the "seats" field, NEVER in "message".
 4. {{FLIGHTS}} IS THE ONLY placeholder you may output. Do NOT output any other {{...}} token — no {{CUSTOMER_NAME}}, {{DESTINATION}}, {{PRICE}} etc. Gad's templates show those placeholders only as STYLE examples; you must replace them with REAL concrete text. Use the KNOWN DETAILS below for the customer name, travelers and destination, and the brief for everything else. If a value is unknown and not in the brief, omit it gracefully rather than leaving a placeholder.
 5. Use ONLY emojis from the ALLOWED EMOJIS whitelist — the exact set Gad already uses. Never introduce a new emoji.
 6. Write content in ${LANG_NAME[lang]}, matching Gad's voice. For Hebrew keep it RTL and use WhatsApp *bold* (single asterisks) exactly as Gad does.
 7. Output the FULL message — greeting, itinerary token, price, terms, sign-off — as Gad would send it, complete and ready to paste.
+8. SEATS. The rendered itinerary carries one seat line per flight segment, holding the literal placeholder "XX" while the seats are unknown ("💺 מושבים: XX" / "(Seat XX - )" / "(Siege XX-)"). You cannot edit it — {{FLIGHTS}} is substituted after you finish. So when the brief supplies seat numbers:
+   • Put them ONLY in the top-level "seats" array, one entry per flight segment in itinerary order. The app substitutes each entry for that segment's "XX". Example: "seats": ["B1, B2", "A1, A2"] means B1, B2 on the first flight and A1, A2 on the second.
+   • If the brief maps seats to directions ("הלוך B1 B2, חזור A1 A2", "outbound 12A, return 14C"), order the array accordingly: outbound first, then inbound.
+   • If the brief gives ONE flat list with no direction mapping ("המושבים B1, B2"), return a SINGLE-entry array (["B1, B2"]) — the app applies that list to every segment. Do NOT pad or guess extra entries.
+   • Write the seat numbers NOWHERE in "message" — no "💺 הושבה: הלוך - B1, B2" summary line, no seat numbers in the fare section, nothing. Duplicating them there is a bug: the itinerary already shows them once the app substitutes.
+   • Since real seats now exist, the fare/ticket section's seating POLICY line must read the ✅ pre-seating wording Gad uses (not "❌ ללא הושבה מראש"). That line is about policy and never carries numbers.
+   • If the brief mentions no seats at all, return an empty array.
 
 ════════ KNOWN DETAILS (write these in as real text — NEVER as placeholders) ════════
 ${details}
@@ -202,8 +226,10 @@ ${examples}
 Return ONLY a JSON object:
 {
   "message": "<the full WhatsApp quote message, with exactly one {{FLIGHTS}} token>",
+  "seats": ["<seats for flight 1, comma-separated>", "<seats for flight 2>", "..."],
   "note": "<one short sentence in ${LANG_NAME[lang]} telling Gad what you wrote>"
 }
+- "seats" is REQUIRED. Per rule 8: one entry per flight segment in itinerary order, a single entry to apply the same seats to every segment, or [] when the brief mentions no seats. Never repeat these numbers inside "message".
 No markdown, no commentary — JSON only.`;
 }
 
@@ -281,7 +307,7 @@ Deno.serve(async (req: Request) => {
     const genRaw = genData?.choices?.[0]?.message?.content;
     if (!genRaw) return json({ error: "empty_response" }, 502);
 
-    let genParsed: { message?: unknown; note?: unknown };
+    let genParsed: { message?: unknown; note?: unknown; seats?: unknown };
     try {
       genParsed = JSON.parse(genRaw);
     } catch {
@@ -295,7 +321,17 @@ Deno.serve(async (req: Request) => {
     const genNote =
       typeof genParsed.note === "string" && genParsed.note.trim() ? genParsed.note.trim() : "";
 
-    return json({ message, note: genNote });
+    // Seat numbers the brief supplied, one entry per flight segment (see rule 8).
+    // The model must NOT write these into the message — the client substitutes
+    // them for the itinerary's "XX" placeholders, so the Amadeus-rendered flight
+    // facts are never touched by generated text.
+    const seats = Array.isArray(genParsed.seats)
+      ? genParsed.seats
+          .map((s) => (typeof s === "string" ? s.trim() : ""))
+          .filter((s) => s.length > 0)
+      : [];
+
+    return json({ message, seats, note: genNote });
   }
 
   const messages = [

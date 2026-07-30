@@ -388,8 +388,15 @@
             <span>WhatsApp Message Preview</span>
           </div>
           <div class="section-body">
+            <!--
+              Hidden in Studio ("מצב סוכן"): the agent builds the message from
+              the locked itinerary, not from a template, and SpecialAgentPanel's
+              sourceText watcher deliberately ignores updates in studio mode —
+              so this picker has no effect there. It stays in the normal flow
+              and in "edit with AI".
+            -->
             <q-select
-              v-if="categoryOptions.length > 1"
+              v-if="categoryOptions.length > 1 && !studioMode"
               v-model="selectedTemplateCategory"
               :options="categoryOptions"
               emit-value
@@ -411,6 +418,7 @@
               :itinerary-text="studioItinerary"
               :known-details="studioKnownDetails"
               @update:text="whatsappMessage = $event"
+              @update:edited="agentEdited = $event"
               @close="onCloseAgent"
             />
             <WhatsAppPhonePreview
@@ -463,9 +471,14 @@
           anchors to the right column of the grid (visual right regardless
           of RTL/LTR); on narrow screens it collapses to a horizontal
           scrollable chip strip above the card.
+
+          Hidden in Studio for the same reason as the template picker above:
+          the toggles only reshape a template-built message, which studio
+          never uses. Dropping the aside leaves the grid's "panel" column
+          empty and keeps the phone mockup centered in "card".
         -->
         <aside
-          v-if="availableSections.length"
+          v-if="availableSections.length && !studioMode"
           class="section-toggles"
           :class="{ 'is-expanded': sectionsExpanded }"
           :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
@@ -578,54 +591,67 @@
     </q-dialog>
 
     <!-- WELCOME DIALOG — first-visit "what's new" overlay -->
-    <!-- Shows once per release. Dismissal writes `welcome_seen:ai-studio-beta-2026-07-19`
+    <!-- Shows once per release. Dismissal writes `welcome_seen:ai-agent-seats-fix-2026-07-30`
          to localStorage so subsequent visits skip it. Future releases bump the key. -->
     <q-dialog v-model="welcomeOpen" persistent>
       <q-card class="welcome-dialog" dir="rtl">
         <div class="welcome-header">
-          <div class="welcome-emoji">🤖</div>
-          <div class="welcome-title">חדש — עוזר ה-AI <span class="welcome-beta">beta</span></div>
-          <div class="welcome-subtitle">שני מצבים חכמים לבניית הצעות — <strong>ואפשר גם להמשיך רגיל לגמרי</strong></div>
+          <div class="welcome-emoji">🛠️</div>
+          <div class="welcome-title">סוכן ה-AI — תיקון גדול <span class="welcome-beta">beta</span></div>
+          <div class="welcome-subtitle">תיקנו את התקלות שדיווחתם עליהן — <strong>ובראשן מקומות ההושבה</strong></div>
         </div>
 
         <q-card-section class="welcome-body">
           <div class="welcome-section">
             <div class="welcome-section-title">
-              <span class="welcome-section-icon">🤖</span>
-              <span>מצב סוכן — יצירה מאפס</span>
+              <span class="welcome-section-icon">🙏</span>
+              <span>קודם כל — סליחה</span>
             </div>
             <div class="welcome-section-text">
-              מדביקים אמדאוס ולוחצים <strong>מצב סוכן 🤖</strong>. פשוט <strong>מספרים בחופש</strong> מה תרצה בהצעה — הסיטואציה, מי משלם, התנאים — וה-AI בונה הצעה <strong>שלמה בסגנון שלך</strong>. מושלם ל<strong>הזמנות חילוץ</strong>, גוף חיצוני שמשלם, הצעה בלי מחיר ללקוח, ומקרים לא שגרתיים.
+              היו תקלות מעצבנות. ביקשתם מקומות הושבה והם <strong>לא נכנסו למסלול</strong> — נשאר שם <strong>XX</strong>. ולפעמים הסוכן אפילו ענה "בוצע" כשבפועל <strong>כלום לא קרה</strong>. מצאנו בדיוק למה, ותיקנו.
             </div>
           </div>
 
           <div class="welcome-section">
             <div class="welcome-section-title">
-              <span class="welcome-section-icon">✨</span>
-              <span>מיוחדות — עריכה בשיחה</span>
+              <span class="welcome-section-icon">💺</span>
+              <span>מקומות הושבה — עובד עכשיו</span>
             </div>
             <div class="welcome-section-text">
-              כבר יש הצעה מוכנה? לחץ <strong>מיוחדות ✨</strong> מתחת לתצוגה, <strong>דבר אל ההודעה</strong> ובקש שינויים נקודתיים ("תשנה דמי ביטול", "תוסיף מקומות מושב"). אפשר לכתוב <strong>בכל שפה</strong> — ההצעה תישאר תמיד בשפת המקור שלה.
+              <strong>מה היה:</strong> הסוכן כתב את המושבים בשורה נפרדת בסוף ההצעה, והמסלול עצמו נשאר עם XX. הסיבה — <strong>המסלול נכנס להודעה רק אחרי שהסוכן סיים לעבוד</strong>, כך שהוא פיזית לא הצליח להגיע אליו.<br />
+              <strong>מה שינינו:</strong> עכשיו הסוכן רק <strong>מבין</strong> מה אמרתם, <strong>והתוכנה עצמה</strong> ממלאת את המושבים בכל אחת מהטיסות. אפשר לכתוב חופשי — "המושבים B1, B2" או "הלוך B1 B2, חזור A1 A2".
             </div>
           </div>
 
           <div class="welcome-section">
             <div class="welcome-section-title">
               <span class="welcome-section-icon">🔒</span>
-              <span>בטוח לחלוטין</span>
+              <span>פרטי הטיסה נעולים — ויש שער אישור</span>
             </div>
             <div class="welcome-section-text">
-              <strong>פרטי הטיסה מהאמדאוס תמיד נעולים</strong> ולא משתנים — מספרים, תאריכים ושעות תמיד מדויקים. ה-AI נשען <strong>אך ורק</strong> על התבניות, השפה והאימוג׳ים שלך, ולא ממציא כלום.
+              מספרי טיסה, תאריכים, שעות ושדות תעופה מהאמדאוס <strong>נעולים</strong>. וכששינוי כן צריך לגעת בהם (למשל מושבים) — תופיע קודם <strong>קופסה צהובה</strong> שאומרת במדויק מה עומד להשתנות, ו<strong>שום דבר לא זז עד שתאשרו ✅</strong>.
+            </div>
+          </div>
+
+          <div class="welcome-section">
+            <div class="welcome-section-title">
+              <span class="welcome-section-icon">🟡</span>
+              <span>רואים מיד מה השתנה</span>
+            </div>
+            <div class="welcome-section-text">
+              אחרי כל שינוי, <strong>מה שהתעדכן נצבע בצהוב</strong> כמו מרקר, ל-5 שניות. לא צריך יותר לקרוא את כל ההצעה מחדש כדי לחפש מה זז. וכשמשהו <strong>לא</strong> הצליח — הסוכן יגיד את זה בפירוש, במקום "בוצע" שקרי.
             </div>
           </div>
 
           <div class="welcome-section welcome-section-beta">
             <div class="welcome-section-title">
               <span class="welcome-section-icon">🧪</span>
-              <span>גרסת beta — נשמח למשוב!</span>
+              <span>עדיין beta — שימו לב לסכומים</span>
             </div>
             <div class="welcome-section-text">
-              זה <strong>חדש ועדיין משתפר</strong>. <strong>לא חייבים להשתמש בזה</strong> — אפשר להמשיך לעבוד בדיוק כרגיל, זה רק תוסף AI אופציונלי. מצאת באג או שיש לך רעיון לשיפור? <strong>שלח לי הערות</strong> ואני אמשיך לשפר 🙏
+              אנחנו מעריכים שהסוכן יעבוד <strong>הרבה יותר טוב</strong> — אבל זה עדיין <strong>beta</strong>, ולא הכל מושלם.<br />
+              <strong>הדבר החשוב ביותר:</strong> עברו על <strong>הסכומים</strong> לפני שליחה — מחיר, דמי שינוי ודמי ביטול. אם לא ציינתם סכום, הסוכן <strong>עלול להשלים מספר מעצמו</strong> במקום להשאיר <strong>00$</strong>. אנחנו מטפלים בזה כרגע.<br />
+              <strong>לא חייבים להשתמש בסוכן</strong> — אפשר להמשיך לעבוד בדיוק כרגיל. מצאתם באג? <strong>שלחו לי הערה</strong> 🙏
             </div>
           </div>
         </q-card-section>
@@ -697,7 +723,7 @@ import SpecialAgentPanel from "src/components/SpecialAgentPanel.vue";
 // features worth highlighting — everyone sees the dialog once more.
 // Module-level const (NOT on the component options) so it isn't reactive
 // and isn't accidentally persisted with the component state.
-const WELCOME_KEY = "welcome_seen:ai-studio-beta-2026-07-19";
+const WELCOME_KEY = "welcome_seen:ai-agent-seats-fix-2026-07-30";
 
 export default {
   components: { WhatsAppPhonePreview, SpecialAgentPanel },
@@ -764,6 +790,17 @@ export default {
       // (lang, category) pair so each language/template combo remembers
       // its own state across reloads.
       sectionToggles: {},
+      // True while the AI panel holds edits of its own that a template rebuild
+      // would discard (mirrors SpecialAgentPanel's aiEdited). Only meaningful in
+      // "edit with AI" — studio hides the template controls entirely.
+      agentEdited: false,
+      // Template state the current preview was built from. A declined "discard
+      // AI edits?" confirmation restores the controls to exactly this.
+      appliedTemplateState: null,
+      // Set while onTemplateCategoryChange owns a rebuild, so the
+      // selectedTemplateCategory watcher doesn't rebuild a second time (and
+      // doesn't bypass the confirmation that handler may still be awaiting).
+      suppressTemplateWatch: false,
       // Accordion state for the toggle panel — only affects mobile (<1100px).
       // Desktop CSS force-shows the list regardless of this flag, so the
       // value here is "mobile collapsed/expanded" only. Default `false`
@@ -868,6 +905,9 @@ export default {
       this.specialMode = false;
       this.studioMode = false;
       this.studioIntent = false;
+      // The panel is gone — there are no agent edits left to protect, so the
+      // template controls go back to changing things without asking.
+      this.agentEdited = false;
     },
     // Shared tail of confirmDestinationAndContinue: either open the Studio agent
     // (studio intent) or build the normal template message.
@@ -1010,21 +1050,99 @@ export default {
         })
         .join("\n");
     },
+    // ── template controls vs. AI edits ────────────────────────────────
+    // Changing the template or an optional section rebuilds whatsappMessage
+    // from scratch. While "edit with AI" is open, SpecialAgentPanel re-splits
+    // its blocks from that message, so a rebuild silently throws away whatever
+    // the agent had done. These helpers ask first and roll the control back if
+    // Gad says no. (Studio is unaffected: the controls are hidden there.)
+    snapshotTemplateState() {
+      return {
+        category: this.selectedTemplateCategory,
+        toggles: Object.assign({}, this.sectionToggles)
+      };
+    },
+    restoreTemplateState(snap) {
+      if (!snap) return;
+      this.suppressTemplateWatch = true;
+      this.selectedTemplateCategory = snap.category;
+      this.sectionToggles = Object.assign({}, snap.toggles);
+      this.$nextTick(() => {
+        this.suppressTemplateWatch = false;
+      });
+    },
+    // Runs `apply` immediately unless it would discard the agent's work; in that
+    // case confirm first, and on refusal put the controls back where they were.
+    // v-model has already mutated them by the time these handlers run, which is
+    // why we restore from appliedTemplateState (the last state actually built).
+    withAgentEditGuard(apply) {
+      const atRisk = this.specialMode && !this.studioMode && this.agentEdited;
+      if (!atRisk) {
+        apply();
+        return;
+      }
+      const snap = this.appliedTemplateState;
+      const he = this.selectedLang === "he";
+      const fr = this.selectedLang === "fr";
+      this.$q
+        .dialog({
+          title: he
+            ? "למחוק את עריכות ה-AI?"
+            : fr
+            ? "Supprimer les modifications de l'IA ?"
+            : "Discard the AI edits?",
+          message: he
+            ? "בנייה מחדש של ההודעה מהתבנית תמחק את כל השינויים שה-AI עשה. להמשיך?"
+            : fr
+            ? "Reconstruire le message depuis le modèle supprimera toutes les modifications de l'IA. Continuer ?"
+            : "Rebuilding the message from the template will discard every change the AI made. Continue?",
+          html: false,
+          persistent: true,
+          ok: {
+            label: he ? "כן, בנה מחדש" : fr ? "Oui, reconstruire" : "Yes, rebuild",
+            color: "negative",
+            unelevated: true,
+            noCaps: true
+          },
+          cancel: {
+            label: he ? "ביטול" : fr ? "Annuler" : "Cancel",
+            color: "grey-7",
+            flat: true,
+            noCaps: true
+          }
+        })
+        .onOk(() => {
+          apply();
+        })
+        .onCancel(() => {
+          this.restoreTemplateState(snap);
+        });
+    },
     onTemplateCategoryChange() {
-      this.savePickerChoice(this.selectedLang, this.selectedTemplateCategory);
-      this.sectionToggles = this.loadSectionToggles(
-        this.selectedLang,
-        this.selectedTemplateCategory
-      );
-      this.onPreview();
+      // Own the rebuild for this change so the watcher doesn't fire one too —
+      // it would run unguarded, before the confirmation is answered.
+      this.suppressTemplateWatch = true;
+      this.withAgentEditGuard(() => {
+        this.savePickerChoice(this.selectedLang, this.selectedTemplateCategory);
+        this.sectionToggles = this.loadSectionToggles(
+          this.selectedLang,
+          this.selectedTemplateCategory
+        );
+        this.onPreview();
+      });
+      this.$nextTick(() => {
+        this.suppressTemplateWatch = false;
+      });
     },
     onSectionToggleChange() {
-      this.saveSectionToggles(
-        this.selectedLang,
-        this.selectedTemplateCategory,
-        this.sectionToggles
-      );
-      this.onPreview();
+      this.withAgentEditGuard(() => {
+        this.saveSectionToggles(
+          this.selectedLang,
+          this.selectedTemplateCategory,
+          this.sectionToggles
+        );
+        this.onPreview();
+      });
     },
     onToggleSectionsPanel() {
       this.sectionsExpanded = !this.sectionsExpanded;
@@ -1138,6 +1256,10 @@ export default {
     },
     onPreview() {
       let flightsTxt;
+
+      // Remember the template state this build came from, so a declined
+      // "discard AI edits?" confirmation can restore the controls to it.
+      this.appliedTemplateState = this.snapshotTemplateState();
 
       this.data.journey = [];
       this.data.journeyCodes = {};
@@ -2829,11 +2951,20 @@ export default {
       immediate: true
     },
     tab(newTab) {
+      // Coming back to the preview while the AI panel holds its own edits must
+      // NOT rebuild from the template — that reseeds the panel and silently
+      // discards them. Nothing is lost by skipping: the panel already shows the
+      // current message. (No prompt here; there is no decision to make.)
+      if (newTab === 'preview' && this.specialMode && this.agentEdited) return;
       if (newTab === 'preview') {
         this.onPreview();
       }
     },
     selectedTemplateCategory() {
+      // onTemplateCategoryChange owns user-driven picks (it may need to confirm
+      // discarding AI edits first) and restoreTemplateState owns roll-backs;
+      // both raise this flag so we neither rebuild twice nor rebuild unguarded.
+      if (this.suppressTemplateWatch) return;
       if (this.tab === 'preview') {
         this.onPreview();
       }

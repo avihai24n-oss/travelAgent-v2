@@ -179,7 +179,15 @@ export async function generateMessage({ brief, lang, flightSummary, itineraryTex
   const data = await res.json();
   const message = typeof data.message === "string" ? data.message : "";
   const note = typeof data.note === "string" ? data.note : "";
-  const itinerary = String(itineraryText || "");
+  const modelSeats = Array.isArray(data.seats)
+    ? data.seats.map(s => String(s || "").trim()).filter(s => s.length)
+    : [];
+
+  // Seats are filled HERE, in code, not by the model: the itinerary is spliced
+  // in below (after the model is done), so generated text can never reach the
+  // Amadeus flight facts. All we touch is each segment's "XX" placeholder.
+  const seatFill = fillSeatPlaceholders(String(itineraryText || ""), modelSeats);
+  const itinerary = seatFill.text;
 
   // Substitute the single {{FLIGHTS}} token (tolerating inner spaces) with the
   // pre-rendered itinerary.
@@ -199,7 +207,53 @@ export async function generateMessage({ brief, lang, flightSummary, itineraryTex
     }
   }
 
-  return { text, note: note || "" };
+  return {
+    text,
+    note: note || "",
+    // Reported so the caller can tell Gad the honest truth instead of echoing a
+    // confident "done" over a message whose seat lines still read "XX".
+    seatsRequested: modelSeats.length > 0,
+    seatsFilled: seatFill.filled,
+    seatLines: seatFill.total
+  };
+}
+
+// A rendered itinerary carries one seat line per flight segment, holding the
+// literal "XX" until the seats are known. The wording is per-language
+// (i18n "seat number"): "💺 מושבים: XX" / "(Seat XX - )" / "(Siege XX-)" — so we
+// key off the 💺 / Seat / Siege marker rather than hard-coding the templates,
+// which keeps working if Gad rewords them.
+const SEAT_LINE_MARKER_RE = /💺|\bSeats?\b|\bSi[eè]ges?\b/i;
+
+/**
+ * Replaces the "XX" placeholder in each of `itinerary`'s seat lines.
+ *
+ * `seats` holds one entry per flight segment, in itinerary order. A single entry
+ * applies to every segment (the "same seats both ways" case). Any other count
+ * mismatch fills what it can in order and leaves the rest as "XX" — reported
+ * back so the caller can say so out loud rather than failing silently.
+ *
+ * @returns {{ text: string, filled: number, total: number }}
+ */
+export function fillSeatPlaceholders(itinerary, seats) {
+  const list = Array.isArray(seats) ? seats.filter(s => String(s || "").trim()) : [];
+  const lines = String(itinerary || "").split("\n");
+  let total = 0;
+  let filled = 0;
+
+  const out = lines.map(line => {
+    if (!SEAT_LINE_MARKER_RE.test(line) || line.indexOf("XX") === -1) return line;
+    const seatIdx = total;
+    total += 1;
+    if (!list.length) return line;
+    // One entry → same seats on every segment; otherwise match by position.
+    const value = list.length === 1 ? list[0] : list[seatIdx];
+    if (!value) return line;
+    filled += 1;
+    return line.replace("XX", value);
+  });
+
+  return { text: out.join("\n"), filled, total };
 }
 
 // ── region engine ─────────────────────────────────────────────────────

@@ -101,6 +101,103 @@ import {
   pingComposeApi
 } from "src/assets/agentCompose.js";
 
+// Did Gad's message ask about seats at all? Only used as a fallback signal for
+// the honest-outcome warning: if the model returned no seats we still want to
+// speak up when the request was clearly about seating. Multilingual on purpose —
+// Gad writes his requests in whatever language he feels like.
+const SEAT_INTENT_RE = /מושב|הושב|כיסא|\bseats?\b|\bseating\b|\bsi[eè]ges?\b|\bplaces?\b/i;
+
+// ── "what just changed" highlight ─────────────────────────────────────
+// After an agent edit the changed text is marker-highlighted for a moment so Gad
+// can see what moved without re-reading the whole quote. Deliberately NOT used
+// for Studio's first message: there, virtually everything is new.
+const HIGHLIGHT_MS = 5000;
+
+// Sentinels stand in for the <mark> tags while the WhatsApp formatting passes
+// run, so those regexes never have to cope with markup. Replaced with real tags
+// last. Both are control chars that cannot occur in a quote.
+const MARK_OPEN = "\u0001";
+const MARK_CLOSE = "\u0002";
+
+// True if the slice would split a *bold* / _italic_ / ~strike~ run — inserting a
+// sentinel there would produce crossing tags, so callers widen to the full line.
+function splitsFormatting(slice) {
+  return ["*", "_", "~"].some(ch => slice.split(ch).length % 2 === 0);
+}
+
+// Given one line before and after, returns [start, end] over just the part that
+// differs — so "💺 מושבים: XX" → "💺 מושבים: B1, B2" marks only the seat numbers
+// rather than the whole line. Falls back to the whole line when the change is a
+// pure deletion (nothing new left to point at).
+function changedRange(oldLine, newLine) {
+  const max = Math.min(oldLine.length, newLine.length);
+  let start = 0;
+  while (start < max && oldLine[start] === newLine[start]) start += 1;
+  let back = 0;
+  while (
+    back < max - start &&
+    oldLine[oldLine.length - 1 - back] === newLine[newLine.length - 1 - back]
+  ) {
+    back += 1;
+  }
+  const end = newLine.length - back;
+  return end <= start ? [0, newLine.length] : [start, end];
+}
+
+// Widens a range out to whitespace boundaries so the marker covers whole words:
+// "850$" → "920$" differs only in "92", but highlighting "920$" reads far better.
+function snapToWords(line, start, end) {
+  let s = start;
+  while (s > 0 && !/\s/.test(line[s - 1])) s -= 1;
+  let e = end;
+  while (e < line.length && !/\s/.test(line[e])) e += 1;
+  return [s, e];
+}
+
+/**
+ * Line-level diff of the message text: which lines of `after` are new or edited,
+ * and which slice of each actually changed.
+ *
+ * Common head and tail lines are trimmed first, so inserting a block marks only
+ * that block instead of everything below it.
+ *
+ * @returns {Object} map of line index in `after` → [start, end] char range
+ */
+function diffMarks(before, after) {
+  const a = String(before || "").split("\n");
+  const b = String(after || "").split("\n");
+  let head = 0;
+  while (head < a.length && head < b.length && a[head] === b[head]) head += 1;
+  let tail = 0;
+  while (
+    tail < a.length - head &&
+    tail < b.length - head &&
+    a[a.length - 1 - tail] === b[b.length - 1 - tail]
+  ) {
+    tail += 1;
+  }
+  // Equal-sized changed regions line up 1:1 (a replace editing lines in place),
+  // so each new line has a counterpart to narrow against. Otherwise lines were
+  // added or removed and there is no reliable pairing — mark them whole.
+  const aligned = a.length - tail - head === b.length - tail - head;
+  const marks = {};
+  for (let i = head; i < b.length - tail; i += 1) {
+    const line = b[i];
+    if (!line.length) continue;
+    const counterpart = aligned ? a[i] : null;
+    if (typeof counterpart === "string") {
+      // Untouched lines sit inside the changed span too (edit one seat line per
+      // flight and every header between them lands in range) — leave them alone.
+      if (counterpart === line) continue;
+      const [start, end] = changedRange(counterpart, line);
+      marks[i] = snapToWords(line, start, end);
+    } else {
+      marks[i] = [0, line.length];
+    }
+  }
+  return marks;
+}
+
 export default {
   name: "SpecialAgentPanel",
   props: {
@@ -129,7 +226,18 @@ export default {
       // Ops that touch the locked flight block, waiting for the user's
       // explicit confirmation (seats, etc.), plus a human summary of them.
       pendingOps: [],
-      pendingSummary: ""
+      pendingSummary: "",
+      // True once an agent patch has actually altered the message text. The
+      // parent uses it (via update:edited) to warn before a template rebuild
+      // wipes this work — in edit mode the sourceText watcher below re-splits
+      // the blocks, so an unguarded rebuild would silently discard it.
+      aiEdited: false,
+      // Marker highlight of the last agent change: { text, marks }. `text` is the
+      // message the ranges were computed against, so the highlight drops itself
+      // if the message changes for any other reason instead of glowing on the
+      // wrong line. Cleared after HIGHLIGHT_MS.
+      highlight: null,
+      highlightTimer: null
     };
   },
   computed: {
@@ -137,7 +245,11 @@ export default {
       return blocksToText(this.blocks);
     },
     renderedHtml() {
-      return this.renderWhatsApp(this.messageText);
+      const text = this.messageText;
+      // Only honour a highlight computed against exactly this text.
+      const marks =
+        this.highlight && this.highlight.text === text ? this.highlight.marks : null;
+      return this.renderWhatsApp(text, marks);
     },
     avatarLetter() {
       const n = (this.contactName || "G").trim();
@@ -175,7 +287,15 @@ export default {
         // re-push the intro note (the "no response" + "repeated messages" bug).
         if (this.mode === "studio") return;
         this.blocks = splitIntoBlocks(val || "");
+        // Freshly seeded from the parent's message — nothing of the agent's own
+        // work is riding on these blocks any more, and any "what just changed"
+        // highlight belongs to text that no longer exists.
+        this.aiEdited = false;
+        this.clearHighlight();
       }
+    },
+    aiEdited(val) {
+      this.$emit("update:edited", val);
     },
     messageText(val) {
       // Bubble the current message up so the parent can send it to WhatsApp.
@@ -190,6 +310,10 @@ export default {
     this.$emit("update:text", this.messageText);
     const res = await pingComposeApi();
     this.apiOk = res.ok && res.openaiConfigured;
+  },
+  beforeDestroy() {
+    // Don't leave the highlight timer firing into a torn-down component.
+    this.clearHighlight();
   },
   methods: {
     seedStudio() {
@@ -217,7 +341,13 @@ export default {
       // Studio brief: the first message generates the full message from scratch.
       if (this.mode === "studio" && !this.hasDraft) {
         try {
-          const { text, note } = await generateMessage({
+          const {
+            text,
+            note,
+            seatsRequested,
+            seatsFilled,
+            seatLines
+          } = await generateMessage({
             brief: instruction,
             lang: this.lang,
             flightSummary: this.flightSummary,
@@ -228,6 +358,9 @@ export default {
           this.blocks = splitIntoBlocks(text);
           this.hasDraft = true;
           if (note) this.log.push({ kind: "agent", text: note });
+          // Never let a confident note stand over an itinerary that still says
+          // "XX" — that was the bug where a seat request looked like it worked.
+          this.reportSeatOutcome({ instruction, seatsRequested, seatsFilled, seatLines });
         } catch (e) {
           this.apiOk = String(e && e.message).indexOf("missing_proxy_config") === -1 ? this.apiOk : false;
           this.log.push({
@@ -257,6 +390,10 @@ export default {
         const beforeText = blocksToText(this.blocks);
         this.blocks = applyPatch(this.blocks, patch);
         const changed = blocksToText(this.blocks) !== beforeText;
+        if (changed) {
+          this.aiEdited = true;
+          this.setHighlight(beforeText);
+        }
         if (changed && note) this.log.push({ kind: "agent", text: note });
 
         // Ops that touch the locked flight block don't apply on their own — stage
@@ -312,6 +449,35 @@ export default {
       el.style.height = "auto";
       el.style.height = Math.min(el.scrollHeight, 96) + "px";
     },
+    // Studio's first message can only fill seats through the "seats" field the
+    // model returns — the itinerary is spliced in afterwards, so the model
+    // cannot reach it. When that fails (no seats returned, or fewer than the
+    // itinerary has segments) the seat lines still read "XX", and Gad has to
+    // hear it: an unnoticed "XX" goes out to the customer.
+    reportSeatOutcome({ instruction, seatsRequested, seatsFilled, seatLines }) {
+      const rtl = this.dir === "rtl";
+      const asked = seatsRequested || SEAT_INTENT_RE.test(String(instruction || ""));
+      if (!asked) return;
+
+      if (!seatsFilled) {
+        this.log.push({
+          kind: "warn",
+          text: rtl
+            ? "לא הצלחתי להכניס את המושבים למסלול — הוא עדיין מציג XX. בקש מהמושבים שוב עכשיו, בהודעה נפרדת, ואעדכן אותם."
+            : "I couldn't put the seats into the itinerary — it still shows XX. Ask for the seats again now, as a separate message, and I'll set them."
+        });
+        return;
+      }
+      if (seatsFilled < seatLines) {
+        const left = seatLines - seatsFilled;
+        this.log.push({
+          kind: "warn",
+          text: rtl
+            ? `מילאתי מושבים ב-${seatsFilled} מתוך ${seatLines} הטיסות. ב-${left} עוד מופיע XX — תגיד לי אילו מושבים שם.`
+            : `I filled seats on ${seatsFilled} of ${seatLines} flights. ${left} still shows XX — tell me which seats go there.`
+        });
+      }
+    },
     // ── confirmation gate for locked (flight) changes ──────────────────
     confirmPending() {
       if (!this.pendingOps.length) return;
@@ -320,6 +486,10 @@ export default {
       // locked flight block (e.g. update the seat line).
       this.blocks = applyPatch(this.blocks, this.pendingOps, { allowLocked: true });
       const changed = blocksToText(this.blocks) !== beforeText;
+      if (changed) {
+        this.aiEdited = true;
+        this.setHighlight(beforeText);
+      }
       this.log.push({
         kind: changed ? "agent" : "warn",
         text: changed
@@ -341,8 +511,37 @@ export default {
       this.pendingOps = [];
       this.pendingSummary = "";
     },
-    renderWhatsApp(src) {
-      let s = String(src)
+    // `marks` (optional) maps line index → [start, end] to marker-highlight.
+    // Sentinels go in on the raw text and only become <mark> tags at the very
+    // end, so the WhatsApp formatting regexes below never meet HTML.
+    renderWhatsApp(src, marks) {
+      let s = String(src);
+
+      if (marks) {
+        s = s
+          .split("\n")
+          .map((line, i) => {
+            const range = marks[i];
+            if (!range) return line;
+            let [start, end] = range;
+            // Never let a sentinel land inside a formatting run — that would
+            // emit tags that cross each other. Mark the whole line instead.
+            if (splitsFormatting(line.slice(start, end))) {
+              start = 0;
+              end = line.length;
+            }
+            return (
+              line.slice(0, start) +
+              MARK_OPEN +
+              line.slice(start, end) +
+              MARK_CLOSE +
+              line.slice(end)
+            );
+          })
+          .join("\n");
+      }
+
+      s = s
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
@@ -350,7 +549,50 @@ export default {
       s = s.replace(/(^|[^*\w])\*([^*\n]+?)\*(?![*\w])/g, "$1<b>$2</b>");
       s = s.replace(/(^|[^_\w])_([^_\n]+?)_(?![_\w])/g, "$1<i>$2</i>");
       s = s.replace(/(^|[^~\w])~([^~\n]+?)~(?![~\w])/g, "$1<s>$2</s>");
+
+      if (marks) {
+        s = s
+          .split(MARK_OPEN)
+          .join('<mark class="wa-new">')
+          .split(MARK_CLOSE)
+          .join("</mark>");
+      }
       return s;
+    },
+    // ── change highlight ───────────────────────────────────────────────
+    // Marker-highlights whatever the just-applied patch changed, for
+    // HIGHLIGHT_MS. A newer change replaces an older one (and restarts the
+    // clock) so the yellow always means "this is what just happened".
+    setHighlight(beforeText) {
+      const marks = diffMarks(beforeText, this.messageText);
+      if (!Object.keys(marks).length) return;
+      this.highlight = { text: this.messageText, marks };
+      if (this.highlightTimer) clearTimeout(this.highlightTimer);
+      this.highlightTimer = setTimeout(() => {
+        this.highlight = null;
+        this.highlightTimer = null;
+      }, HIGHLIGHT_MS);
+      this.$nextTick(this.scrollToHighlight);
+    },
+    clearHighlight() {
+      if (this.highlightTimer) {
+        clearTimeout(this.highlightTimer);
+        this.highlightTimer = null;
+      }
+      this.highlight = null;
+    },
+    // Brings the first highlighted line into view — a change further up a long
+    // quote is otherwise missed entirely. Scrolls the chat pane by hand rather
+    // than via scrollIntoView, which would also scroll the page.
+    scrollToHighlight() {
+      const chat = this.$refs.chat;
+      if (!chat) return;
+      const el = chat.querySelector("mark.wa-new");
+      if (!el) return;
+      const target = el.getBoundingClientRect();
+      const pane = chat.getBoundingClientRect();
+      const delta = target.top - pane.top - chat.clientHeight / 2 + target.height / 2;
+      chat.scrollTop = Math.max(0, chat.scrollTop + delta);
     }
   }
 };
@@ -487,6 +729,33 @@ export default {
 .wa-bubble-text ::v-deep b { font-weight: 700; }
 .wa-bubble-text ::v-deep i { font-style: italic; }
 .wa-bubble-text ::v-deep s { text-decoration: line-through; }
+
+/*
+  Marker highlight on whatever the last agent edit changed. Injected via v-html,
+  so it needs ::v-deep like the tags above. The colour lives in a custom property
+  so the keyframes work for both themes, and box-decoration-break keeps the
+  marker looking continuous when a run wraps across lines.
+*/
+.wa-bubble-text ::v-deep mark.wa-new {
+  --wa-new-bg: #ffe680;
+  background-color: var(--wa-new-bg);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  animation: waNewFade 5s ease-out forwards;
+}
+/* Holds the colour, then releases it over the last ~0.9s so it doesn't just
+   blink out. Must match HIGHLIGHT_MS in the script. */
+@keyframes waNewFade {
+  0%, 82% { background-color: var(--wa-new-bg); }
+  100% { background-color: transparent; }
+}
+body.body--dark .wa-bubble-text ::v-deep mark.wa-new {
+  --wa-new-bg: #7d6413;
+  color: #fff6d5;
+}
 
 .wa-bubble-meta {
   display: inline-flex; gap: 3px; align-items: center; float: right;
