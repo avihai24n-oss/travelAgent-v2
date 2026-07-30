@@ -598,60 +598,39 @@
         <div class="welcome-header">
           <div class="welcome-emoji">🛠️</div>
           <div class="welcome-title">סוכן ה-AI — תיקון גדול <span class="welcome-beta">beta</span></div>
-          <div class="welcome-subtitle">תיקנו את התקלות שדיווחתם עליהן — <strong>ובראשן מקומות ההושבה</strong></div>
+          <div class="welcome-subtitle">המושבים סוף סוף נכנסים <strong>לתוך המסלול</strong></div>
         </div>
 
         <q-card-section class="welcome-body">
           <div class="welcome-section">
             <div class="welcome-section-title">
               <span class="welcome-section-icon">🙏</span>
-              <span>קודם כל — סליחה</span>
+              <span>סליחה על התקלות</span>
             </div>
             <div class="welcome-section-text">
-              היו תקלות מעצבנות. ביקשתם מקומות הושבה והם <strong>לא נכנסו למסלול</strong> — נשאר שם <strong>XX</strong>. ולפעמים הסוכן אפילו ענה "בוצע" כשבפועל <strong>כלום לא קרה</strong>. מצאנו בדיוק למה, ותיקנו.
+              ביקשתם מושבים והם לא נכנסו למסלול — נשאר <strong>XX</strong>. מצאנו למה, ותיקנו.
             </div>
           </div>
 
           <div class="welcome-section">
             <div class="welcome-section-title">
-              <span class="welcome-section-icon">💺</span>
-              <span>מקומות הושבה — עובד עכשיו</span>
+              <span class="welcome-section-icon">✅</span>
+              <span>מה חדש</span>
             </div>
             <div class="welcome-section-text">
-              <strong>מה היה:</strong> הסוכן כתב את המושבים בשורה נפרדת בסוף ההצעה, והמסלול עצמו נשאר עם XX. הסיבה — <strong>המסלול נכנס להודעה רק אחרי שהסוכן סיים לעבוד</strong>, כך שהוא פיזית לא הצליח להגיע אליו.<br />
-              <strong>מה שינינו:</strong> עכשיו הסוכן רק <strong>מבין</strong> מה אמרתם, <strong>והתוכנה עצמה</strong> ממלאת את המושבים בכל אחת מהטיסות. אפשר לכתוב חופשי — "המושבים B1, B2" או "הלוך B1 B2, חזור A1 A2".
-            </div>
-          </div>
-
-          <div class="welcome-section">
-            <div class="welcome-section-title">
-              <span class="welcome-section-icon">🔒</span>
-              <span>פרטי הטיסה נעולים — ויש שער אישור</span>
-            </div>
-            <div class="welcome-section-text">
-              מספרי טיסה, תאריכים, שעות ושדות תעופה מהאמדאוס <strong>נעולים</strong>. וכששינוי כן צריך לגעת בהם (למשל מושבים) — תופיע קודם <strong>קופסה צהובה</strong> שאומרת במדויק מה עומד להשתנות, ו<strong>שום דבר לא זז עד שתאשרו ✅</strong>.
-            </div>
-          </div>
-
-          <div class="welcome-section">
-            <div class="welcome-section-title">
-              <span class="welcome-section-icon">🟡</span>
-              <span>רואים מיד מה השתנה</span>
-            </div>
-            <div class="welcome-section-text">
-              אחרי כל שינוי, <strong>מה שהתעדכן נצבע בצהוב</strong> כמו מרקר, ל-5 שניות. לא צריך יותר לקרוא את כל ההצעה מחדש כדי לחפש מה זז. וכשמשהו <strong>לא</strong> הצליח — הסוכן יגיד את זה בפירוש, במקום "בוצע" שקרי.
+              💺 מושבים נכנסים לכל הטיסות — "<strong>הלוך B1 B2, חזור A1 A2</strong>"<br />
+              🔒 שינוי בפרטי טיסה עובר <strong>אישור שלכם</strong> קודם<br />
+              🟡 מה שהשתנה <strong>נצבע בצהוב</strong> ל-5 שניות
             </div>
           </div>
 
           <div class="welcome-section welcome-section-beta">
             <div class="welcome-section-title">
               <span class="welcome-section-icon">🧪</span>
-              <span>עדיין beta — שימו לב לסכומים</span>
+              <span>עדיין beta</span>
             </div>
             <div class="welcome-section-text">
-              אנחנו מעריכים שהסוכן יעבוד <strong>הרבה יותר טוב</strong> — אבל זה עדיין <strong>beta</strong>, ולא הכל מושלם.<br />
-              <strong>הדבר החשוב ביותר:</strong> עברו על <strong>הסכומים</strong> לפני שליחה — מחיר, דמי שינוי ודמי ביטול. אם לא ציינתם סכום, הסוכן <strong>עלול להשלים מספר מעצמו</strong> במקום להשאיר <strong>00$</strong>. אנחנו מטפלים בזה כרגע.<br />
-              <strong>לא חייבים להשתמש בסוכן</strong> — אפשר להמשיך לעבוד בדיוק כרגיל. מצאתם באג? <strong>שלחו לי הערה</strong> 🙏
+              <strong>בדקו את הסכומים לפני שליחה</strong> — מחיר ודמי ביטול. לא חייבים להשתמש בסוכן.
             </div>
           </div>
         </q-card-section>
