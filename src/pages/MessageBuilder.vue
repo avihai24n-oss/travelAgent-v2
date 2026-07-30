@@ -591,46 +591,34 @@
     </q-dialog>
 
     <!-- WELCOME DIALOG — first-visit "what's new" overlay -->
-    <!-- Shows once per release. Dismissal writes `welcome_seen:ai-agent-seats-fix-2026-07-30`
+    <!-- Shows once per release. Dismissal writes `welcome_seen:ai-agent-back-2026-07-30`
          to localStorage so subsequent visits skip it. Future releases bump the key. -->
     <q-dialog v-model="welcomeOpen" persistent>
       <q-card class="welcome-dialog" dir="rtl">
         <div class="welcome-header">
-          <div class="welcome-emoji">🛠️</div>
-          <div class="welcome-title">סוכן ה-AI — תיקון גדול <span class="welcome-beta">beta</span></div>
-          <div class="welcome-subtitle">המושבים סוף סוף נכנסים <strong>לתוך המסלול</strong></div>
+          <div class="welcome-emoji">🤖</div>
+          <div class="welcome-title">סוכן ה-AI חזר <span class="welcome-beta">beta</span></div>
+          <div class="welcome-subtitle">מצטערים על הבאגים שגיליתם 🙏</div>
         </div>
 
         <q-card-section class="welcome-body">
           <div class="welcome-section">
             <div class="welcome-section-title">
-              <span class="welcome-section-icon">🙏</span>
-              <span>סליחה על התקלות</span>
-            </div>
-            <div class="welcome-section-text">
-              ביקשתם מושבים והם לא נכנסו למסלול — נשאר <strong>XX</strong>. מצאנו למה, ותיקנו.
-            </div>
-          </div>
-
-          <div class="welcome-section">
-            <div class="welcome-section-title">
               <span class="welcome-section-icon">✅</span>
-              <span>מה חדש</span>
+              <span>הסוכן חזר לפעולה</span>
             </div>
             <div class="welcome-section-text">
-              💺 מושבים נכנסים לכל הטיסות — "<strong>הלוך B1 B2, חזור A1 A2</strong>"<br />
-              🔒 שינוי בפרטי טיסה עובר <strong>אישור שלכם</strong> קודם<br />
-              🟡 מה שהשתנה <strong>נצבע בצהוב</strong> ל-5 שניות
+              החזרנו את סוכן ה-AI — ועכשיו תוכלו להשתמש בו <strong>בצורה נוחה יותר</strong>.
             </div>
           </div>
 
           <div class="welcome-section welcome-section-beta">
             <div class="welcome-section-title">
               <span class="welcome-section-icon">🧪</span>
-              <span>עדיין beta</span>
+              <span>גרסת ניסיון</span>
             </div>
             <div class="welcome-section-text">
-              <strong>בדקו את הסכומים לפני שליחה</strong> — מחיר ודמי ביטול. לא חייבים להשתמש בסוכן.
+              זה עדיין בגרסת ניסיון — אם נתקלתם בתקלה, <strong>דווחו לנו</strong> 🙏
             </div>
           </div>
         </q-card-section>
@@ -702,7 +690,7 @@ import SpecialAgentPanel from "src/components/SpecialAgentPanel.vue";
 // features worth highlighting — everyone sees the dialog once more.
 // Module-level const (NOT on the component options) so it isn't reactive
 // and isn't accidentally persisted with the component state.
-const WELCOME_KEY = "welcome_seen:ai-agent-seats-fix-2026-07-30";
+const WELCOME_KEY = "welcome_seen:ai-agent-back-2026-07-30";
 
 export default {
   components: { WhatsAppPhonePreview, SpecialAgentPanel },
