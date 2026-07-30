@@ -104,7 +104,18 @@
               class="translate-btn"
               :loading="isTranslatingNames"
               :disable="!data.smartAmadeusCode || apiStatus === 'offline'"
-              @click="openDestinationPicker"
+              @click="openDestinationPicker()"
+              no-caps
+            />
+            <q-btn
+              :label="studioBtnLabel"
+              icon="smart_toy"
+              color="deep-purple-6"
+              outline
+              size="lg"
+              class="studio-btn"
+              :disable="!data.smartAmadeusCode || apiStatus === 'offline'"
+              @click="onStartStudio"
               no-caps
             />
             <q-chip
@@ -377,8 +388,15 @@
             <span>WhatsApp Message Preview</span>
           </div>
           <div class="section-body">
+            <!--
+              Hidden in Studio ("מצב סוכן"): the agent builds the message from
+              the locked itinerary, not from a template, and SpecialAgentPanel's
+              sourceText watcher deliberately ignores updates in studio mode —
+              so this picker has no effect there. It stays in the normal flow
+              and in "edit with AI".
+            -->
             <q-select
-              v-if="categoryOptions.length > 1"
+              v-if="categoryOptions.length > 1 && !studioMode"
               v-model="selectedTemplateCategory"
               :options="categoryOptions"
               emit-value
@@ -389,13 +407,40 @@
               :label="selectedLang === 'he' ? 'תבנית' : selectedLang === 'fr' ? 'Modèle' : 'Template'"
               @input="onTemplateCategoryChange"
             />
+            <SpecialAgentPanel
+              v-if="specialMode"
+              :source-text="whatsappMessage"
+              :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
+              :lang="selectedLang"
+              :flight-summary="flightSummaryForAgent"
+              :contact-name="previewContactName"
+              :mode="studioMode ? 'studio' : 'edit'"
+              :itinerary-text="studioItinerary"
+              :known-details="studioKnownDetails"
+              @update:text="whatsappMessage = $event"
+              @update:edited="agentEdited = $event"
+              @close="onCloseAgent"
+            />
             <WhatsAppPhonePreview
+              v-else
               :text="whatsappMessage"
               :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
               :contact-name="previewContactName"
               @update:text="whatsappMessage = $event"
             />
             <div class="preview-actions">
+              <q-btn
+                v-if="!specialMode"
+                @click="specialMode = true; studioMode = false"
+                class="special-btn"
+                unelevated
+                no-caps
+                color="deep-purple-6"
+                icon="auto_awesome"
+                :label="selectedLang === 'he' ? 'ערוך עם AI' : selectedLang === 'fr' ? 'Éditer avec IA' : 'Edit with AI'"
+                :disable="!whatsappMessage"
+                size="md"
+              />
               <q-btn
                 @click="onCopyMessage"
                 class="copy-msg-btn"
@@ -426,9 +471,14 @@
           anchors to the right column of the grid (visual right regardless
           of RTL/LTR); on narrow screens it collapses to a horizontal
           scrollable chip strip above the card.
+
+          Hidden in Studio for the same reason as the template picker above:
+          the toggles only reshape a template-built message, which studio
+          never uses. Dropping the aside leaves the grid's "panel" column
+          empty and keeps the phone mockup centered in "card".
         -->
         <aside
-          v-if="availableSections.length"
+          v-if="availableSections.length && !studioMode"
           class="section-toggles"
           :class="{ 'is-expanded': sectionsExpanded }"
           :dir="selectedLang === 'he' ? 'rtl' : 'ltr'"
@@ -524,7 +574,7 @@
             no-caps
             color="grey-7"
             :label="$t('destination picker cancel')"
-            @click="destinationPickerOpen = false"
+            @click="destinationPickerOpen = false; studioIntent = false"
           />
           <q-btn
             color="primary"
@@ -541,40 +591,67 @@
     </q-dialog>
 
     <!-- WELCOME DIALOG — first-visit "what's new" overlay -->
-    <!-- Shows once per release. Dismissal writes `welcome_seen:flights-only-restored-2026-07-28`
+    <!-- Shows once per release. Dismissal writes `welcome_seen:ai-agent-seats-fix-2026-07-30`
          to localStorage so subsequent visits skip it. Future releases bump the key. -->
     <q-dialog v-model="welcomeOpen" persistent>
       <q-card class="welcome-dialog" dir="rtl">
         <div class="welcome-header">
-          <div class="welcome-emoji">✈️</div>
-          <div class="welcome-title">מסלול טיסות בלבד חזר!</div>
-          <div class="welcome-subtitle">הפיצ׳ר שוב זמין ועובד כמו שצריך</div>
+          <div class="welcome-emoji">🛠️</div>
+          <div class="welcome-title">סוכן ה-AI — תיקון גדול <span class="welcome-beta">beta</span></div>
+          <div class="welcome-subtitle">תיקנו את התקלות שדיווחתם עליהן — <strong>ובראשן מקומות ההושבה</strong></div>
         </div>
 
         <q-card-section class="welcome-body">
           <div class="welcome-section">
             <div class="welcome-section-title">
-              <span class="welcome-section-icon">✅</span>
-              <span>Flights Only — חזר לפעולה</span>
+              <span class="welcome-section-icon">🙏</span>
+              <span>קודם כל — סליחה</span>
             </div>
             <div class="welcome-section-text">
-              המסלול שמייצר <strong>רק את בלוק מסלול הטיסה</strong> — בלי פתיחה, בלי תנאי כרטיס, בלי חתימה — <strong>חזר לעבוד.</strong> הוא לא נכלל בבנייה מאז עדכון Multi Airfare, ועכשיו תוקן וזמין שוב לשימוש מלא.
+              היו תקלות מעצבנות. ביקשתם מקומות הושבה והם <strong>לא נכנסו למסלול</strong> — נשאר שם <strong>XX</strong>. ולפעמים הסוכן אפילו ענה "בוצע" כשבפועל <strong>כלום לא קרה</strong>. מצאנו בדיוק למה, ותיקנו.
             </div>
           </div>
 
           <div class="welcome-section">
             <div class="welcome-section-title">
-              <span class="welcome-section-icon">🎯</span>
-              <span>איך משתמשים?</span>
+              <span class="welcome-section-icon">💺</span>
+              <span>מקומות הושבה — עובד עכשיו</span>
             </div>
             <div class="welcome-section-text">
-              <div class="welcome-howto-item">
-                <strong>בחר מתפריט הבחירה</strong> את המסלול הרצוי:
-                <div class="welcome-howto-sub">⭐ Standard / ✈️ Flights Only / 🎫 Multi Airfare</div>
-              </div>
-              <div class="welcome-howto-item">
-                בחירה ב־<strong>✈️ Flights Only</strong> תפיק הודעה שכוללת רק את פרטי הטיסות — מושלם כשהלקוח רק רוצה לראות את הטיסות.
-              </div>
+              <strong>מה היה:</strong> הסוכן כתב את המושבים בשורה נפרדת בסוף ההצעה, והמסלול עצמו נשאר עם XX. הסיבה — <strong>המסלול נכנס להודעה רק אחרי שהסוכן סיים לעבוד</strong>, כך שהוא פיזית לא הצליח להגיע אליו.<br />
+              <strong>מה שינינו:</strong> עכשיו הסוכן רק <strong>מבין</strong> מה אמרתם, <strong>והתוכנה עצמה</strong> ממלאת את המושבים בכל אחת מהטיסות. אפשר לכתוב חופשי — "המושבים B1, B2" או "הלוך B1 B2, חזור A1 A2".
+            </div>
+          </div>
+
+          <div class="welcome-section">
+            <div class="welcome-section-title">
+              <span class="welcome-section-icon">🔒</span>
+              <span>פרטי הטיסה נעולים — ויש שער אישור</span>
+            </div>
+            <div class="welcome-section-text">
+              מספרי טיסה, תאריכים, שעות ושדות תעופה מהאמדאוס <strong>נעולים</strong>. וכששינוי כן צריך לגעת בהם (למשל מושבים) — תופיע קודם <strong>קופסה צהובה</strong> שאומרת במדויק מה עומד להשתנות, ו<strong>שום דבר לא זז עד שתאשרו ✅</strong>.
+            </div>
+          </div>
+
+          <div class="welcome-section">
+            <div class="welcome-section-title">
+              <span class="welcome-section-icon">🟡</span>
+              <span>רואים מיד מה השתנה</span>
+            </div>
+            <div class="welcome-section-text">
+              אחרי כל שינוי, <strong>מה שהתעדכן נצבע בצהוב</strong> כמו מרקר, ל-5 שניות. לא צריך יותר לקרוא את כל ההצעה מחדש כדי לחפש מה זז. וכשמשהו <strong>לא</strong> הצליח — הסוכן יגיד את זה בפירוש, במקום "בוצע" שקרי.
+            </div>
+          </div>
+
+          <div class="welcome-section welcome-section-beta">
+            <div class="welcome-section-title">
+              <span class="welcome-section-icon">🧪</span>
+              <span>עדיין beta — שימו לב לסכומים</span>
+            </div>
+            <div class="welcome-section-text">
+              אנחנו מעריכים שהסוכן יעבוד <strong>הרבה יותר טוב</strong> — אבל זה עדיין <strong>beta</strong>, ולא הכל מושלם.<br />
+              <strong>הדבר החשוב ביותר:</strong> עברו על <strong>הסכומים</strong> לפני שליחה — מחיר, דמי שינוי ודמי ביטול. אם לא ציינתם סכום, הסוכן <strong>עלול להשלים מספר מעצמו</strong> במקום להשאיר <strong>00$</strong>. אנחנו מטפלים בזה כרגע.<br />
+              <strong>לא חייבים להשתמש בסוכן</strong> — אפשר להמשיך לעבוד בדיוק כרגיל. מצאתם באג? <strong>שלחו לי הערה</strong> 🙏
             </div>
           </div>
         </q-card-section>
@@ -586,7 +663,7 @@
             no-caps
             size="md"
             class="welcome-cta"
-            label="הבנתי, בוא נתחיל! 🚀"
+            label="הבנתי, בוא ננסה! 🚀"
             @click="dismissWelcome"
           />
         </q-card-actions>
@@ -640,15 +717,16 @@ import {
   pingTranslationApi
 } from "src/assets/nameTranslator.js";
 import WhatsAppPhonePreview from "src/components/WhatsAppPhonePreview.vue";
+import SpecialAgentPanel from "src/components/SpecialAgentPanel.vue";
 
 // Welcome popup release tag. Bump this on every release that ships new
 // features worth highlighting — everyone sees the dialog once more.
 // Module-level const (NOT on the component options) so it isn't reactive
 // and isn't accidentally persisted with the component state.
-const WELCOME_KEY = "welcome_seen:flights-only-restored-2026-07-28";
+const WELCOME_KEY = "welcome_seen:ai-agent-seats-fix-2026-07-30";
 
 export default {
-  components: { WhatsAppPhonePreview },
+  components: { WhatsAppPhonePreview, SpecialAgentPanel },
   mixins: [messageMixin],
   data() {
     return {
@@ -661,6 +739,12 @@ export default {
       destinationPickerOpen: false,
       pendingDestinationCode: null,
       selectedFinalDestination: null,
+      // When true, confirming the destination opens the AI Studio agent
+      // instead of building a template message. Set by onStartStudio().
+      studioIntent: false,
+      // Concrete details (customer name, travelers, destination) handed to the
+      // Studio agent so it writes them into the message instead of placeholders.
+      studioKnownDetails: null,
       // Welcome dialog — first-visit "what's new" overlay. Stays open
       // until the user clicks the CTA, which writes a per-release flag to
       // localStorage so subsequent visits skip it. Bump WELCOME_KEY on
@@ -684,6 +768,13 @@ export default {
       },
       previewTxt: "",
       whatsappMessage: "",
+      // "מיוחדות" — swaps the preview for the Specials agent panel so Gad can
+      // adapt the message by talking to it (rescue bookings, external payer, …).
+      specialMode: false,
+      // "מצב סוכן" — Studio: AI writes the whole message from a brief; only the
+      // itinerary is fixed. Reuses specialMode to swap in SpecialAgentPanel.
+      studioMode: false,
+      studioItinerary: "",
       darkMode: false,
       ticketIssuanceDeadline: "",
       // Pilot: lets Gad pick which template fills with the Amadeus PNR data.
@@ -699,6 +790,17 @@ export default {
       // (lang, category) pair so each language/template combo remembers
       // its own state across reloads.
       sectionToggles: {},
+      // True while the AI panel holds edits of its own that a template rebuild
+      // would discard (mirrors SpecialAgentPanel's aiEdited). Only meaningful in
+      // "edit with AI" — studio hides the template controls entirely.
+      agentEdited: false,
+      // Template state the current preview was built from. A declined "discard
+      // AI edits?" confirmation restores the controls to exactly this.
+      appliedTemplateState: null,
+      // Set while onTemplateCategoryChange owns a rebuild, so the
+      // selectedTemplateCategory watcher doesn't rebuild a second time (and
+      // doesn't bypass the confirmation that handler may still be awaiting).
+      suppressTemplateWatch: false,
       // Accordion state for the toggle panel — only affects mobile (<1100px).
       // Desktop CSS force-shows the list regardless of this flag, so the
       // value here is "mobile collapsed/expanded" only. Default `false`
@@ -763,7 +865,68 @@ export default {
       }
       this.apiStatus = result.openaiConfigured ? "ok" : "misconfigured";
     },
-    openDestinationPicker() {
+    // Entry point for Studio mode: route through the SAME destination picker as
+    // the normal flow (so the multi-destination "pick the primary" step and the
+    // passenger-name translation both run), then open the agent instead of
+    // building a template. The branch happens in confirmDestinationAndContinue.
+    onStartStudio() {
+      // Studio intent is decided inside openDestinationPicker (the single entry
+      // point) so a stale flag can never leak into the normal flow.
+      this.openDestinationPicker(true);
+    },
+    onOpenStudio() {
+      // Studio: hand the AI the fixed itinerary + the concrete details Gad
+      // already entered (customer name, travelers, destination) and let it write
+      // the whole message from his brief — do NOT build a template message here.
+      // getAmadeusTranslate mutates data.journey/journeyCodes, so snapshot/restore.
+      const jSnap = (this.data.journey || []).slice();
+      const jcSnap = { ...(this.data.journeyCodes || {}) };
+      this.studioItinerary = this.getAmadeusTranslate(this.data.smartAmadeusCode || "");
+      this.data.journey = jSnap;
+      this.data.journeyCodes = jcSnap;
+
+      const firstName = ((this.data.travelers[0] && this.data.travelers[0].name) || "").trim();
+      const allNames = (this.data.travelers || [])
+        .map(t => (t.name || "").trim())
+        .filter(Boolean);
+      const dest = this.selectedFinalDestination;
+      this.studioKnownDetails = {
+        customerName: firstName,
+        travelers: allNames,
+        destination: dest ? (dest.cityName || dest.city || "") : "",
+        destinationCode: dest ? dest.code || "" : ""
+      };
+
+      this.studioMode = true;
+      this.specialMode = true;
+      this.tab = "preview";
+    },
+    onCloseAgent() {
+      this.specialMode = false;
+      this.studioMode = false;
+      this.studioIntent = false;
+      // The panel is gone — there are no agent edits left to protect, so the
+      // template controls go back to changing things without asking.
+      this.agentEdited = false;
+    },
+    // Shared tail of confirmDestinationAndContinue: either open the Studio agent
+    // (studio intent) or build the normal template message.
+    proceedAfterDestination() {
+      this.destinationPickerOpen = false;
+      if (this.studioIntent) {
+        this.studioIntent = false;
+        this.onOpenStudio();
+      } else {
+        this.tab = "preview";
+        this.onPreview();
+      }
+    },
+    openDestinationPicker(forStudio = false) {
+      // Decide studio-vs-normal HERE, at the single entry point, so an abandoned
+      // Studio attempt (opened the picker, then cancelled) can never leak its
+      // intent into a later normal "create" click — that was the bug where a
+      // regular create wrongly opened Studio (generate-from-scratch).
+      this.studioIntent = forStudio === true;
       const prev = this.selectedFinalDestination ? this.selectedFinalDestination.code : null;
       const dests = this.extractedDestinations;
       const stillValid = prev && dests.some(d => d.code === prev);
@@ -782,9 +945,7 @@ export default {
       if (parsedNames.length === 0) {
         this.lastTranslatedNames = [];
         this.lastTranslationInfo = "";
-        this.destinationPickerOpen = false;
-        this.tab = "preview";
-        this.onPreview();
+        this.proceedAfterDestination();
         return;
       }
 
@@ -796,9 +957,7 @@ export default {
         const newTravelers = buildTravelersFromNames(parsedNames, translated);
         this.data.travelers = newTravelers;
         this.lastTranslatedNames = newTravelers.map(t => t.name);
-        this.destinationPickerOpen = false;
-        this.tab = "preview";
-        this.onPreview();
+        this.proceedAfterDestination();
         this.$q.notify({
           type: "positive",
           message: this.translatedCountMsg(newTravelers.length),
@@ -813,9 +972,7 @@ export default {
         const fallbackTravelers = buildTravelersFromNames(parsedNames, []);
         this.data.travelers = fallbackTravelers;
         this.lastTranslatedNames = fallbackTravelers.map(t => t.name);
-        this.destinationPickerOpen = false;
-        this.tab = "preview";
-        this.onPreview();
+        this.proceedAfterDestination();
         const msg =
           err && err.message === "missing_proxy_config"
             ? this.missingApiKeyMsg
@@ -893,21 +1050,99 @@ export default {
         })
         .join("\n");
     },
+    // ── template controls vs. AI edits ────────────────────────────────
+    // Changing the template or an optional section rebuilds whatsappMessage
+    // from scratch. While "edit with AI" is open, SpecialAgentPanel re-splits
+    // its blocks from that message, so a rebuild silently throws away whatever
+    // the agent had done. These helpers ask first and roll the control back if
+    // Gad says no. (Studio is unaffected: the controls are hidden there.)
+    snapshotTemplateState() {
+      return {
+        category: this.selectedTemplateCategory,
+        toggles: Object.assign({}, this.sectionToggles)
+      };
+    },
+    restoreTemplateState(snap) {
+      if (!snap) return;
+      this.suppressTemplateWatch = true;
+      this.selectedTemplateCategory = snap.category;
+      this.sectionToggles = Object.assign({}, snap.toggles);
+      this.$nextTick(() => {
+        this.suppressTemplateWatch = false;
+      });
+    },
+    // Runs `apply` immediately unless it would discard the agent's work; in that
+    // case confirm first, and on refusal put the controls back where they were.
+    // v-model has already mutated them by the time these handlers run, which is
+    // why we restore from appliedTemplateState (the last state actually built).
+    withAgentEditGuard(apply) {
+      const atRisk = this.specialMode && !this.studioMode && this.agentEdited;
+      if (!atRisk) {
+        apply();
+        return;
+      }
+      const snap = this.appliedTemplateState;
+      const he = this.selectedLang === "he";
+      const fr = this.selectedLang === "fr";
+      this.$q
+        .dialog({
+          title: he
+            ? "למחוק את עריכות ה-AI?"
+            : fr
+            ? "Supprimer les modifications de l'IA ?"
+            : "Discard the AI edits?",
+          message: he
+            ? "בנייה מחדש של ההודעה מהתבנית תמחק את כל השינויים שה-AI עשה. להמשיך?"
+            : fr
+            ? "Reconstruire le message depuis le modèle supprimera toutes les modifications de l'IA. Continuer ?"
+            : "Rebuilding the message from the template will discard every change the AI made. Continue?",
+          html: false,
+          persistent: true,
+          ok: {
+            label: he ? "כן, בנה מחדש" : fr ? "Oui, reconstruire" : "Yes, rebuild",
+            color: "negative",
+            unelevated: true,
+            noCaps: true
+          },
+          cancel: {
+            label: he ? "ביטול" : fr ? "Annuler" : "Cancel",
+            color: "grey-7",
+            flat: true,
+            noCaps: true
+          }
+        })
+        .onOk(() => {
+          apply();
+        })
+        .onCancel(() => {
+          this.restoreTemplateState(snap);
+        });
+    },
     onTemplateCategoryChange() {
-      this.savePickerChoice(this.selectedLang, this.selectedTemplateCategory);
-      this.sectionToggles = this.loadSectionToggles(
-        this.selectedLang,
-        this.selectedTemplateCategory
-      );
-      this.onPreview();
+      // Own the rebuild for this change so the watcher doesn't fire one too —
+      // it would run unguarded, before the confirmation is answered.
+      this.suppressTemplateWatch = true;
+      this.withAgentEditGuard(() => {
+        this.savePickerChoice(this.selectedLang, this.selectedTemplateCategory);
+        this.sectionToggles = this.loadSectionToggles(
+          this.selectedLang,
+          this.selectedTemplateCategory
+        );
+        this.onPreview();
+      });
+      this.$nextTick(() => {
+        this.suppressTemplateWatch = false;
+      });
     },
     onSectionToggleChange() {
-      this.saveSectionToggles(
-        this.selectedLang,
-        this.selectedTemplateCategory,
-        this.sectionToggles
-      );
-      this.onPreview();
+      this.withAgentEditGuard(() => {
+        this.saveSectionToggles(
+          this.selectedLang,
+          this.selectedTemplateCategory,
+          this.sectionToggles
+        );
+        this.onPreview();
+      });
     },
     onToggleSectionsPanel() {
       this.sectionsExpanded = !this.sectionsExpanded;
@@ -1021,6 +1256,10 @@ export default {
     },
     onPreview() {
       let flightsTxt;
+
+      // Remember the template state this build came from, so a declined
+      // "discard AI edits?" confirmation can restore the controls to it.
+      this.appliedTemplateState = this.snapshotTemplateState();
 
       this.data.journey = [];
       this.data.journeyCodes = {};
@@ -2304,6 +2543,13 @@ export default {
     selectDestinationBtnLabel() {
       return this.$t("select destination");
     },
+    studioBtnLabel() {
+      return this.selectedLang === "he"
+        ? "מצב סוכן"
+        : this.selectedLang === "fr"
+        ? "Mode agent"
+        : "Agent mode";
+    },
     extractedDestinations() {
       // Returns unique non-origin airports found in the parsed PNR, ready
       // for the destination-picker dialog. The first flight's origin is treated
@@ -2446,6 +2692,23 @@ export default {
     previewContactName() {
       const name = (this.data.travelers[0] && this.data.travelers[0].name) || "";
       return name.trim() || (this.selectedLang === "he" ? "לקוח" : "Customer");
+    },
+    // Compact, read-only flight facts handed to the Specials agent as context.
+    // The agent never edits these — they live in the locked flight block — but
+    // seeing them helps it phrase the wrapper correctly.
+    flightSummaryForAgent() {
+      try {
+        const flights = this.getParsedFlights();
+        if (!flights || !flights.length) return "";
+        return flights
+          .map(f => {
+            const dir = f.direction ? `${f.direction}: ` : "";
+            return `${dir}${f.airline} ${f.flightNumber} ${f.departAirportCode}→${f.destAirportCode} ${f.departDay || ""} ${f.departDateNumberOnlyStr || ""} ${f.departMonth || ""} ${f.departTime || ""}`.trim();
+          })
+          .join("\n");
+      } catch (e) {
+        return "";
+      }
     },
     travelersTypeAmountMap() {
       let travelersTypeAmountMap = {};
@@ -2688,11 +2951,20 @@ export default {
       immediate: true
     },
     tab(newTab) {
+      // Coming back to the preview while the AI panel holds its own edits must
+      // NOT rebuild from the template — that reseeds the panel and silently
+      // discards them. Nothing is lost by skipping: the panel already shows the
+      // current message. (No prompt here; there is no decision to make.)
+      if (newTab === 'preview' && this.specialMode && this.agentEdited) return;
       if (newTab === 'preview') {
         this.onPreview();
       }
     },
     selectedTemplateCategory() {
+      // onTemplateCategoryChange owns user-driven picks (it may need to confirm
+      // discarding AI edits first) and restoreTemplateState owns roll-backs;
+      // both raise this flag so we neither rebuild twice nor rebuild unguarded.
+      if (this.suppressTemplateWatch) return;
       if (this.tab === 'preview') {
         this.onPreview();
       }
@@ -3550,6 +3822,32 @@ body.body--dark .section-toggle-group {
   font-size: 14px;
   opacity: 0.95;
   font-weight: 500;
+}
+
+.welcome-beta {
+  display: inline-block;
+  vertical-align: middle;
+  margin-inline-start: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.welcome-section-beta {
+  background: #fff8e1;
+  border: 1px solid #fde68a;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+body.body--dark .welcome-section-beta {
+  background: #3a2f10;
+  border-color: #92641b;
 }
 
 .welcome-body {
